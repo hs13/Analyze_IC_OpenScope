@@ -75,7 +75,7 @@ legend(probes)
 xlabel('electrode localid')
 
 %% neuctxall
-whichneuctx = 2; % 1: correct definition, 2: >=230, 3: topmost-250um
+whichneuctx = 1; % 1: correct definition, 2: >=230, 3: topmost-250um
 elecid = electrode_id+1;
 revmapelecid = NaN(max(elecid),1);
 revmapelecid(elecid) = 1:numel(elecid);

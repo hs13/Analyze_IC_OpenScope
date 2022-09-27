@@ -14,7 +14,7 @@ datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(contains(nwbsessions, 'sub'));
-for ises = 1:4 %:numel(nwbsessions)
+for ises = 1:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;
 
@@ -251,7 +251,7 @@ fprintf('longest spontaneous block is %.0fs\n', mv)
 sponTstartind = floor(vis.spontaneous_presentations.start_time(mi)'/Tres)+1;
 sponTendind = floor(vis.spontaneous_presentations.stop_time(mi)'/Tres);
 sponFRall = mean(spiketrain(sponTstartind:sponTendind, :),1)/Tres;
-meanFRall = mean(spiketrain(:, :),1)/Tres;
+meanFRall = mean(spiketrain,1)/Tres;
 % figure; hold all
 % plot(sponFR, meanFR, 'k.')
 % xl = xlim; yl = ylim; al = [min([xl yl]) max([xl yl])];
@@ -260,9 +260,9 @@ meanFRall = mean(spiketrain(:, :),1)/Tres;
 
 %% psthall and Rall
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
+% visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+% visind = [6 5 1 2 4 3];
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
-visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
-visind = [6 5 1 2 4 3];
 psthtli = (-500:1000)';
 neucnt = 0;
 for iprobe = 1:numel(probes)

@@ -13,7 +13,7 @@
 function RFCI = analyzeRFCI(R, trialorder, sponFR)
 
 Nneurons = size(R,1);
-if numel(spnFR) ~= Nneurons
+if numel(sponFR) ~= Nneurons
     error('check sponFR')
 end
 

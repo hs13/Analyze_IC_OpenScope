@@ -20,17 +20,16 @@ probeneuronsagg = cell(size(probes));
 neuctxagg = cell(size(probes));
 neulocagg = cell(size(probes));
 sesneuoiagg = cell(size(probes));
-% ICsigagg = cell(size(probes));
-RFCIagg = struct();
-% sizeCIagg = cell(size(probes));
-% oriparamsagg = cell(size(probes));
 psthsizeCG_ctxagg = cell(size(probes));
 psthsizeIG_ctxagg = cell(size(probes));
 psthsizeCG4_ctxagg = cell(size(probes));
 psthsizeCG64_ctxagg = cell(size(probes));
+psthsizeFG_ctxagg = cell(size(probes));
 psthRFCG_ctxagg = cell(size(probes));
 psthRFIG_ctxagg = cell(size(probes));
 
+% ICsigagg = cell(size(probes));
+% oriparamsagg = cell(size(probes));
 RFCIfields = {'Rrfclassic','Rrfinverse','RFindclassic','RFindinverse', ...
     'Pkw_rfclassic','Pkw_rfinverse','pRrfclassic','pRrfinverse','pRFclassic','pRFinverse'};
 RFCIagg = struct();
@@ -49,7 +48,7 @@ end
 
 for ises = 1:4%Nsessions
     fprintf('Session %d/%d %s\n', ises, Nsessions, nwbsessions{ises} )
-pathpp = [datadir nwbsessions{ises} filesep];
+pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
 load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
 
@@ -65,7 +64,7 @@ revmapelecid(elecid) = 1:numel(elecid);
 % oriparamsall = struct();
 for iprobe = 1:numel(probes)
 %     tic
-    load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}), 'neuoind')
+    load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
     % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
     load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}))
     % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
@@ -124,7 +123,7 @@ sizeCIagg(iprobe).(sizeCIfields{f}) = cat(1, sizeCIagg(iprobe).(sizeCIfields{f})
 end
 
 % size vector [0, 4, 8, 16, 32, 64 ]
-for icond = 1:4
+for icond = 1:5
     switch icond
         case 1
             trialsoi = floor(vis.sizeCI_presentations.trialorder/1000)==4;
@@ -136,6 +135,8 @@ for icond = 1:4
             trialsoi = floor(vis.sizeCI_presentations.trialorder/1000)==2;
         case 4
             trialsoi = floor(vis.sizeCI_presentations.trialorder/1000)==6;
+        case 5
+            trialsoi = floor(vis.sizeCI_presentations.trialorder/1000)==11;
     end
     temp = 1000*psth.sizeCI_presentations(:,trialsoi,neuoi);
     % plot(psthtli, smooth(squeeze(mean(temp, [2,3])), 5), '-')
@@ -151,6 +152,8 @@ for icond = 1:4
             psthsizeCG4_ctxagg{iprobe} = cat(2, psthsizeCG4_ctxagg{iprobe}, squeeze(mean(temp, 2)) );
         case 4
             psthsizeCG64_ctxagg{iprobe} = cat(2, psthsizeCG64_ctxagg{iprobe}, squeeze(mean(temp, 2)) );
+        case 5
+            psthsizeFG_ctxagg{iprobe} = cat(2, psthsizeFG_ctxagg{iprobe}, squeeze(mean(temp, 2)) );
     end
 end
   
@@ -180,7 +183,12 @@ end
 
 end
 
-%% smoothed
+save('G:\My Drive\DATA\OpenScope\psth_CGIG.mat', 'probes', 'visareas', 'visind', 'nwbsessions', ...
+    'probeneuronsagg', 'neuctxagg', 'neulocagg', 'sesneuoiagg', 'RFCIagg', 'sizeCIagg', ...
+    'psthtli', 'psthsizeCG_ctxagg', 'psthsizeCG4_ctxagg', 'psthsizeCG64_ctxagg', ...
+    'psthsizeIG_ctxagg', 'psthsizeFG_ctxagg', 'psthRFCG_ctxagg', 'psthRFIG_ctxagg', '-v7.3')
+
+%% for grant
 %sizeCI: each stim is 0.25s, inter-trial interval is 0.5s, drifting grating
 
 addpath(genpath('H:\CODE\helperfunctions'))
@@ -189,8 +197,27 @@ kerwinhalf = 2; kersigma = 1;
 kergauss = normpdf( (-kerwinhalf:kerwinhalf)', 0,kersigma);
 kergauss = (kergauss/sum(kergauss));
 
+probes2p = [3 4 5 2];
 fs=14;
-figure('Position', [100 100 1800 300])
+figure('Position', [100 100 1200 300])
+% annotation('textbox', [0.1 0.9 0.9 0.1], 'string', 'Neuropixels: center-CRF neurons', 'edgecolor', 'none', 'fontsize', fs)
+for isp= 1:length(probes2p)
+    iprobe = probes2p(isp);
+subplot(1,4, isp)
+neuoi = sesneuoiagg{iprobe}<=4 & RFCIagg(iprobe).RFindclassic==1 & RFCIagg(iprobe).pRFclassic<0.05;
+temppsthCG = convn(psthsizeCG_ctxagg{iprobe}(:,neuoi), kergauss, 'same');
+hold all
+shadedErrorBar(psthtli/1000, squeeze(mean(temppsthCG,2)), squeeze(std(temppsthCG,0,2)/sqrt(nnz(neuoi))), {'k-', 'LineWidth', 1}, 1)
+xlim([-.1 .200])
+ylim([0 25])
+set(gca, 'FontSize', fs)
+    xlabel('Time (s)')
+    ylabel('Rate (Hz)')
+    title(visareas{iprobe})
+%     title(sprintf('%s N=%d', visareas{iprobe}, nnz(neuoi)))
+end
+
+figure('Position', [100 500 1800 300])
 % annotation('textbox', [0.1 0.9 0.9 0.1], 'string', 'Neuropixels: center-CRF neurons', 'edgecolor', 'none', 'fontsize', fs)
 for iprobe= 1:6
 subplot(1,6, visind(iprobe))
@@ -272,6 +299,7 @@ set(gca, 'FontSize', fs)
     xlabel('Time (s)')
     ylabel('Rate (Hz)')
     title(sprintf('%s N=%d', visareas{iprobe}, nnz(neuoi)))
+%     title(sprintf('%s N=%d', visareas{iprobe}, nnz(neuoi)))
 end
 
 %%

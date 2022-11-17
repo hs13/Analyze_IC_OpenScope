@@ -36,18 +36,21 @@ for itt = 1:5
             temptt = BICREl2tt;
     end
     temptrialsoi = ismember(trialorder, temptt);
-    tempPkw = zeros(Nneurons,1);
-    tempPmc = NaN(Nneurons, nchoosek(numel(temptt),2));
-    for ci = 1:Nneurons
-        [p,tbl,stats] = kruskalwallis(R(ci,temptrialsoi), ...
-            trialorder(temptrialsoi), 'off');
-        tempPkw(ci) = p;
-        % if p<0.05
-        c = multcompare(stats, 'Display','off');
-        tempPmc(ci,:) = c(:,end);
-        % end
-    end
-    tempttpair = [temptt(c(:,1))' temptt(c(:,2))'];
+    temptt = unique(trialorder(temptrialsoi));
+    
+        tempPkw = zeros(Nneurons,1);
+        tempPmc = NaN(Nneurons, nchoosek(numel(temptt),2));
+        for ci = 1:Nneurons
+            [p,tbl,stats] = kruskalwallis(R(ci,temptrialsoi), ...
+                trialorder(temptrialsoi), 'off');
+            tempPkw(ci) = p;
+            % if p<0.05
+            c = multcompare(stats, 'Display','off');
+            tempPmc(ci,:) = c(:,end);
+            % end
+        end
+        tempttpair = [temptt(c(:,1))' temptt(c(:,2))'];
+
     switch itt
         case 1
             PkwBK = tempPkw;
@@ -83,19 +86,23 @@ blanktrials = trialorder==0;
 if verbosity
 tic
 end
-SP_BK = NaN(Nneurons, numel(BKtt)-1);
-Pmww_BK = NaN(Nneurons, numel(BKtt)-1);
-for typi = 2:numel(BKtt)
-    Ktrials = trialorder==BKtt(typi);
+BKttpairrows = find(BKttpair(:,1)==0);
+SP_BK = NaN(Nneurons, numel(BKttpairrows) );
+Pmww_BK = NaN(Nneurons, numel(BKttpairrows) );
+for typi = 1:numel(BKttpairrows)
+    Ktrials = trialorder==BKttpair(BKttpairrows(typi),2);
+    if nnz(blanktrials)==0 || nnz(Ktrials)==0
+        continue
+    end
+    labels = [zeros(1,nnz(blanktrials)) ones(1,nnz(Ktrials))];
     
     for ci = 1:Nneurons
         scores = [R(ci, blanktrials) R(ci, Ktrials)];
-        labels = [zeros(1,nnz(blanktrials)) ones(1,nnz(Ktrials))];
         
         [X,Y,T,AUC,OPTROCPT] = perfcurve(labels,scores,'1');% , 'NBoot',Nshuf);
-        SP_BK(ci,typi-1) = AUC;
+        SP_BK(ci,typi) = AUC;
         
-        Pmww_BK(ci, typi-1) = signrank(R(ci, blanktrials), R(ci, Ktrials));
+        Pmww_BK(ci, typi) = ranksum(R(ci, blanktrials), R(ci, Ktrials));
     end
 end
 if verbosity
@@ -108,7 +115,7 @@ end
 sigmcBK = zeros( Nneurons, size(SP_BK,2) );
 sigmcBK(SP_BK>0.5) = 1;
 sigmcBK(SP_BK<0.5) = -1;
-sigmcBK(PmcBK(:, 1:4)>=Palpha) = 0;
+sigmcBK(PmcBK(:, BKttpair(:,1)==0)>=Palpha) = 0;
 sigmcBK(PkwBK>=Palpha, :)=0;
 
 %{
@@ -149,15 +156,18 @@ for typi = 1:4
     outtt = 1304+typi;
     intrials = trialorder==intt;
     outtrials = trialorder==outtt;
+    if nnz(outtrials)==0 || nnz(intrials)==0
+        continue
+    end
+    labels = [zeros(1,nnz(outtrials)) ones(1,nnz(intrials))];
     
     for ci = 1:Nneurons
         scores = [R(ci, outtrials) R(ci, intrials)];
-        labels = [zeros(1,nnz(outtrials)) ones(1,nnz(intrials))];
         
         [X,Y,T,AUC,OPTROCPT] = perfcurve(labels,scores,'1');% , 'NBoot',Nshuf);
         SP_Ind(ci,typi) = AUC;
         
-        Pmww_Ind(ci,typi) = signrank(R(ci, outtrials), R(ci, intrials));
+        Pmww_Ind(ci,typi) = ranksum(R(ci, outtrials), R(ci, intrials));
     end
 end
 if verbosity
@@ -173,10 +183,13 @@ end
 SP_BICREl = NaN(Nneurons, numel(BICREltt)-1);
 for typi = 2:numel(BICREltt)
     temptrials = trialorder==BICREltt(typi);
+    if nnz(blanktrials)==0 || nnz(temptrials)==0
+        continue
+    end
+    labels = [zeros(1,nnz(blanktrials)) ones(1,nnz(temptrials))];
     
     for ci = 1:Nneurons
         scores = [R(ci, blanktrials) R(ci, temptrials)];
-        labels = [zeros(1,nnz(blanktrials)) ones(1,nnz(temptrials))];
         
         [X,Y,T,AUC,OPTROCPT] = perfcurve(labels,scores,'1');% , 'NBoot',Nshuf);
         SP_BICREl(ci,typi-1) = AUC;
@@ -197,14 +210,14 @@ SP_BICREl1 = SP_BICREl(:, ismember(BICREltt(2:end), BICREl1tt(2:end)));
 sigmcBICREl1 = zeros(size(SP_BICREl1));
 sigmcBICREl1(SP_BICREl1>0.5) = 1;
 sigmcBICREl1(SP_BICREl1<0.5) = -1;
-sigmcBICREl1(PmcBICREl1(:, 1:2)>=Palpha) = 0;
+sigmcBICREl1(PmcBICREl1(:, BICREl1ttpair(:,1)==0)>=Palpha) = 0;
 sigmcBICREl1(PkwBICREl1>=Palpha, :)=0;
 
 SP_BICREl2 = SP_BICREl(:, ismember(BICREltt(2:end), BICREl2tt(2:end)));
 sigmcBICREl2 = zeros(size(SP_BICREl2));
 sigmcBICREl2(SP_BICREl2>0.5) = 1;
 sigmcBICREl2(SP_BICREl2<0.5) = -1;
-sigmcBICREl2(PmcBICREl2(:, 1:2)>=Palpha) = 0;
+sigmcBICREl2(PmcBICREl2(:, BICREl2ttpair(:,1)==0)>=Palpha) = 0;
 sigmcBICREl2(PkwBICREl2>=Palpha, :)=0;
 
 if verbosity
@@ -226,12 +239,16 @@ for ci = 1:Nneurons
     tempICtrials = trialorder==tempICtt;
     tempRCtrials = trialorder==tempRCtt;
     
+    if nnz(tempICtrials)==0 || nnz(tempRCtrials)==0
+        continue
+    end
+    
     scores = [R(ci, tempRCtrials) R(ci, tempICtrials)];
     labels = [zeros(1,nnz(tempRCtrials)) ones(1,nnz(tempICtrials))];
     [X,Y,T,AUC,OPTROCPT] = perfcurve(labels,scores,'1');% , 'NBoot',Nshuf);
     SP_ICvsRC(ci) = AUC;
     
-    Pmww_ICvsRC(ci) = signrank(R(ci, tempRCtrials), R(ci, tempICtrials));
+    Pmww_ICvsRC(ci) = ranksum(R(ci, tempRCtrials), R(ci, tempICtrials));
 end
 if verbosity
 toc
@@ -274,10 +291,10 @@ end
 for typi = 1:4
     intt = 1300+typi;
     outtt = 1304+typi;
-    tempmcind = BIttpair(:,1)==intt & BIttpair(:,2)==outtt;
-    if ~(nnz(tempmcind)==1)
-        error('check BI comparisons')
-    end
+%     tempmcind = BIttpair(:,1)==intt & BIttpair(:,2)==outtt;
+%     if ~(nnz(tempmcind)==1)
+%         error('check BI comparisons')
+%     end
     %     tempindin = SP_Ind(:,typi)>0.5 & PkwBI<Palpha & PmcBI(:,tempmcind)<Palpha;
     %     tempindout = SP_Ind(:,typi)<0.5 & PkwBI<Palpha & PmcBI(:,tempmcind)<Palpha;
     % HS 220518: IMPORTANT CHANGE

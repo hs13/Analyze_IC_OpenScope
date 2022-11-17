@@ -7,8 +7,8 @@ clear all
 
 % addpath(genpath('H:\CODE\OpenSource\matnwb'))
 addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
-addpath(genpath('H:\CODE\helperfunctions'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
+addpath(genpath('H:\CODE\helperfunctions'))
 
 datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
@@ -21,7 +21,7 @@ sesclk = tic;
 % pathpp = 'D:\OpenScopeData\000248\sub-Placeholder\';
 % nwb = nwbRead('D:\OpenScopeData\000248\sub-Placeholder\sub-Placeholder.nwb');
 
-pathpp = [datadir nwbsessions{ises} filesep];
+pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 nwbfiles = dir([pathpp '*.nwb']);
 nwbspikefile = fullfile([nwbfiles(1).folder filesep nwbfiles(1).name]);
 % nwbspikefile = string(nwbspikefile);
@@ -321,6 +321,7 @@ end
 % 'visblocknames', 'trialtypes', 'ICblocks', 
 
 % RFCI: each stim is 0.25s, inter-trial interval is 0s, spinning grating
+% orientation denotation is same as psychtoolbox (0 is 12h, 45 is 1h30m, clockwise)
 % durstim = vis.RFCI_presentations.stop_time-vis.RFCI_presentations.start_time;
 % disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
 % durstim = vis.RFCI_presentations.start_time(2:end)-vis.RFCI_presentations.stop_time(1:end-1);
@@ -336,6 +337,7 @@ RFCI = analyzeRFCI(tempR, temptrialorder, sponFRvec);
 
 
 %sizeCI: each stim is 0.25s, inter-trial interval is 0.5s, drifting grating
+%szvec = [0, 4, 8, 16, 32, 64];
 % durstim = vis.sizeCI_presentations.stop_time-vis.sizeCI_presentations.start_time;
 % disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
 % durstim = vis.sizeCI_presentations.start_time(2:end)-vis.sizeCI_presentations.stop_time(1:end-1);

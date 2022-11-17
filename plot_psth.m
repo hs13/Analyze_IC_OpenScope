@@ -7,7 +7,7 @@ nwbsessions = nwbsessions(contains(nwbsessions, 'sub'));
 
 ises = 4;
 
-pathpp = [datadir nwbsessions{ises} filesep];
+pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
 load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
 

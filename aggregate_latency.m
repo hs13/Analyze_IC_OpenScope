@@ -1,4 +1,7 @@
 datadir = 'D:\OpenScopeData\000248\';
+nwbdir = dir(datadir);
+nwbsessions = {nwbdir.name};
+nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
 
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
 visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
@@ -19,22 +22,60 @@ for b = 1:numel(visblocks)
         spklatencyadjprobagg.(whichbin).(visblocks{b}) = cell(size(probes));
     end
 end
-Nsessions=4;
+Nsessions=numel(nwbsessions)-1;
 for ises = 1:Nsessions
     pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+    load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
+    load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
+    
+    whichneuctx = 1; % 1: correct definition, 2: >=230, 3: topmost-250um
+    elecid = electrode_id+1;
+    revmapelecid = NaN(max(elecid),1);
+    revmapelecid(elecid) = 1:numel(elecid);
+
     for iprobe = 1:numel(probes)
         load(sprintf('%sspikelatency_probe%s.mat', pathpp, probes{iprobe}))
+    load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}), 'neuoind')
+        
+    % check whether CCF registration is correct
+    probelocs = electrode_location(ismember(electrode_id, unit_peakch(neuoind)));
+    
+    neuloc = electrode_location(revmapelecid(unit_peakch(neuoind)+1));
+    if ~isequal(unique(probelocs), unique(neuloc))
+        disp(unique(neuloc)')
+        error('check neuloc')
+    end
+    
+    switch whichneuctx
+        case 1
+            neuctx = contains(neuloc, 'VIS');
+        case 2
+            % assume that >=230 is neocortex
+            neuctx = mod(unit_peakch(neuoind), 1000)>=230;
+            warning('for now, assuming that electrode_localid>=230 is neocortex (until CCF registration is corrected)')
+            % 2 electrodes per depth, vertical spacing is 20um
+            % typical electrode span in cortex 120 : (120/2)*20 = ~1200um
+        case 3
+            % to approximately get layer 2/3 cells, take units within 250um of the topmost unit
+            neuctx = mod(unit_peakch(neuoind), 1000)>=max(mod(unit_peakch(neuoind), 1000))-25;
+            warning('for now, to approximately get layer 2/3 cells, take units within 250um of the topmost unit')
+    end
+    
         for b = 1:numel(visblocks)
             for ibin = 1:numel(spklatencybins)
                 whichbin = sprintf('bin%dms',spklatencybins(ibin));
                 spklatencyagg.(whichbin).(visblocks{b}){iprobe} = cat(1, ...
-                    spklatencyagg.(whichbin).(visblocks{b}){iprobe}, spklatency.(whichbin).(visblocks{b}));
+                    spklatencyagg.(whichbin).(visblocks{b}){iprobe}, ...
+                    spklatency.(whichbin).(visblocks{b})(neuctx) );
                 spklatencyprobagg.(whichbin).(visblocks{b}){iprobe} = cat(1, ...
-                    spklatencyprobagg.(whichbin).(visblocks{b}){iprobe}, spklatencyprob.(whichbin).(visblocks{b}));
+                    spklatencyprobagg.(whichbin).(visblocks{b}){iprobe}, ...
+                    spklatencyprob.(whichbin).(visblocks{b})(neuctx) );
                 spklatencyadjagg.(whichbin).(visblocks{b}){iprobe} = cat(1, ...
-                    spklatencyadjagg.(whichbin).(visblocks{b}){iprobe}, spklatencyadj.(whichbin).(visblocks{b}));
+                    spklatencyadjagg.(whichbin).(visblocks{b}){iprobe}, ...
+                    spklatencyadj.(whichbin).(visblocks{b})(neuctx) );
                 spklatencyadjprobagg.(whichbin).(visblocks{b}){iprobe} = cat(1, ...
-                    spklatencyadjprobagg.(whichbin).(visblocks{b}){iprobe}, spklatencyadjprob.(whichbin).(visblocks{b}));
+                    spklatencyadjprobagg.(whichbin).(visblocks{b}){iprobe}, ...
+                    spklatencyadjprob.(whichbin).(visblocks{b})(neuctx) );
             end
         end
     end

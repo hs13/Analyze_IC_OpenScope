@@ -2,9 +2,14 @@ datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name};
 nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
-Nsessions = 4; %numel(nwbsessions)-1;
+Nsessions = numel(nwbsessions)-1;
 
+justctx = false;
+if justctx
 visareas = {'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam'};
+else
+visareas = {'A', 'B', 'C', 'D', 'E', 'F'};
+end
 ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
 
 % visareas = {'VISp'};
@@ -21,7 +26,11 @@ for a = 1:numel(visareas)
     for b = 1:numel(ICblocknames)
         whichICblock = ICblocknames{b};
         for ises = 1:Nsessions
+            if justctx
             pathsvm = [datadir 'SVM_' svmdesc filesep nwbsessions{ises} filesep];
+            else
+            pathsvm = [datadir 'SVM_' svmdesc '_allunits' filesep nwbsessions{ises} filesep];
+            end
             svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_silencesubsets_', whichICblock, '.mat');
             if exist(svmfn, 'file')
                 load(svmfn, 'SVMtrainICRC')
@@ -150,7 +159,7 @@ for a = 1:numel(visareas)
     end
 end
 toc
-save(['D:\OpenScopeData\000248\postprocessed\SVM_trainICRC_' preproc '_agg.mat'], 'SVMtrainICRCagg', 'HR_SVMtrainICRC', '-v7.3')
+save([pathsvm 'SVM_trainICRC_' preproc '_agg.mat'], 'SVMtrainICRCagg', 'HR_SVMtrainICRC', '-v7.3')
 
 %% adjusted performance metrics
 if ~exist('dprime_SVMtrainICRC', 'var')
@@ -186,33 +195,29 @@ fs = 14;
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
 figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for b = 1:numel(ICblocknames)
-        whichICblock = ICblocknames{b};
-        subplot(4,numel(ICblocknames),numel(ICblocknames)*(ises-1)+b)
-        tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.test(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
-        title(sprintf('Session%d %s %.4f', ises, whichICblock, mean(diag(tempHR))) )
-    end
+for b = 1:numel(ICblocknames)
+    whichICblock = ICblocknames{b};
+    subplot(2,2,b)
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.test, [3 4] ));
+    imagesc(tempHR)
+    caxis([0 1]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
+    title(sprintf('Session%d %s %.4f', ises, whichICblock, mean(diag(tempHR))) )
 end
 colormap jet
 
 ytl = {'REt1', 'REt2'};
 figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for b = 1:numel(ICblocknames)
-        whichICblock = ICblocknames{b};
-        subplot(4,numel(ICblocknames),numel(ICblocknames)*(ises-1)+b)
-        tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.REt(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
-        infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-        title(sprintf('Session%d %s IC-RC %.4f', ises, whichICblock, mean(infscore)) )
-    end
+for b = 1:numel(ICblocknames)
+    whichICblock = ICblocknames{b};
+    subplot(2,2,b)
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.REt, [3 4] ));
+    imagesc(tempHR)
+    caxis([0 1]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
+    infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
+    title(sprintf('Session%d %s IC-RC %.4f', ises, whichICblock, mean(infscore)) )
 end
 colormap jet
 

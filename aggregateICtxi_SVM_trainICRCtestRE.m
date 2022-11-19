@@ -9,6 +9,7 @@ if justctx
 visareas = {'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam'};
 else
 visareas = {'A', 'B', 'C', 'D', 'E', 'F'};
+probelabels = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 end
 ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
 
@@ -191,33 +192,38 @@ end
 
 
 %% compare blocks V1
-fs = 14;
+fs = 10;
+whichvisarea = 'C';
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for b = 1:numel(ICblocknames)
     whichICblock = ICblocknames{b};
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
+    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
+    p = signrank(hrvec - 1/length(traintrialtypes));
     subplot(2,2,b)
-    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.test, [3 4] ));
-    imagesc(tempHR)
+    imagesc(mean(tempHR, 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
-    title(sprintf('Session%d %s %.4f', ises, whichICblock, mean(diag(tempHR))) )
+    title(sprintf('%s %.2f p=%.4f', whichICblock, mean(hrvec), p) )
 end
 colormap jet
 
 ytl = {'REt1', 'REt2'};
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for b = 1:numel(ICblocknames)
     whichICblock = ICblocknames{b};
     subplot(2,2,b)
-    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).VISp.REt, [3 4] ));
-    imagesc(tempHR)
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
+    imagesc(mean(tempHR, 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
     infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-    title(sprintf('Session%d %s IC-RC %.4f', ises, whichICblock, mean(infscore)) )
+    p = signrank(infscore);
+    title(sprintf('%s IC-RC %.2f p=%.4f', whichICblock, mean(infscore), p) )
 end
 colormap jet
 
@@ -227,32 +233,32 @@ fs = 12;
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
 figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for a = 1:numel(visareas)
-        whichvisarea = visareas{a};
-        subplot(4,numel(visareas),numel(visareas)*(ises-1)+a)
-        tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
-        title(sprintf('Session%d %s %.4f', ises, whichvisarea, mean(diag(tempHR))) )
-    end
+for a = 1:numel(visareas)
+    whichvisarea = visareas{a};
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
+    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
+    p = signrank(hrvec - 1/length(traintrialtypes));
+    subplot(2,3,a)
+    imagesc(mean(tempHR, 3))
+    caxis([0 1]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
+    title(sprintf('%s %.2f p=%.4f', whichvisarea, mean(hrvec), p) )
 end
 colormap jet
 
 ytl = {'REt1', 'REt2'};
 figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for a = 1:numel(visareas)
-        whichvisarea = visareas{a};
-        subplot(4,numel(visareas),numel(visareas)*(ises-1)+a)
-        tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
-        infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-        title(sprintf('Session%d %s IC-RC %.4f', ises, whichvisarea, mean(infscore)) )
-    end
+for a = 1:numel(visareas)
+    whichvisarea = visareas{a};
+    subplot(2,3,a)
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
+    imagesc(mean(tempHR, 3))
+    caxis([0 1]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
+    infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
+    p = signrank(infscore);
+    title(sprintf('%s IC-RC %.2f p=%.4f', whichvisarea, mean(infscore), p) )
 end
 colormap jet

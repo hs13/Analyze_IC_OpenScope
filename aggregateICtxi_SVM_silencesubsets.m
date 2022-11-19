@@ -10,8 +10,8 @@ Nsessions = 4; %numel(nwbsessions)-1;
 whichvisarea = 'VISp';
 whichICblock = 'ICwcfg1';
 
-preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 svmdesc = 'trainICRCtestRE';
+preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
 
 SVMsilICRCagg = struct();

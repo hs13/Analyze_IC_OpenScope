@@ -13,7 +13,7 @@ addpath(genpath('H:\CODE\helperfunctions'))
 datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
-nwbsessions = nwbsessions(contains(nwbsessions, 'sub'));
+nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
 for ises = 1:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;

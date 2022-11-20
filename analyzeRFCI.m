@@ -1,3 +1,6 @@
+% THIS CODE TREATS THE ENTIRE SPINNING GRATING AS ONE TRIAL, CONSISTENT
+% WITH THE ANALYSIS DONE WITH 2P DATASET
+
 % % 10000s: which type (classic 0 vs inverse 1), 1000s which ctrsizes, 
 % % 10-100s: which RFcenter, 1s: which direction
 % RFCI = struct();

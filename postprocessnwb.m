@@ -3,6 +3,9 @@
 % sessions successfully postprocessed: {'sub-1171903426','sub-1172969386','sub-1175512776','sub-1177693335'}
 % sessions not postprocessed: {'sub-1181585601','sub-1182593224','sub-1183369796','sub-1186544719','sub-Placeholder'} 
 
+% check here for camstim orientation: clockwise, i.e., 30deg is 1o'clock
+% http://observatory.brain-map.org/visualcoding/stimulus/static_gratings
+
 clear all
 
 % addpath(genpath('H:\CODE\OpenSource\matnwb'))
@@ -335,6 +338,10 @@ tempR = squeeze(1000*mean(psth.RFCI_presentations(tloi,1:4:end,:), 1))';
 temptrialorder = vis.RFCI_presentations.trialorder(1:4:end);
 RFCI = analyzeRFCI(tempR, temptrialorder, sponFRvec);
 
+tloi = psthtli>0 & psthtli<=250;
+tempR = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
+temptrialorder = vis.RFCI_presentations.trialorder;
+RFCIspin = analyzeRFCIspin(tempR, temptrialorder, sponFRvec);
 
 %sizeCI: each stim is 0.25s, inter-trial interval is 0.5s, drifting grating
 %szvec = [0, 4, 8, 16, 32, 64];
@@ -345,10 +352,11 @@ RFCI = analyzeRFCI(tempR, temptrialorder, sponFRvec);
 tloi = psthtli>0 & psthtli<=250;
 tempR = squeeze(1000*mean(psth.sizeCI_presentations(tloi,:,:), 1))';
 temptrialorder = vis.sizeCI_presentations.trialorder;
-[sizeCI, oriparams] = analyzesizeCI(tempR, temptrialorder);
+[sizeCI, oriparams, ori4params] = analyzesizeCI(tempR, temptrialorder);
 
 save(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}), ...
-    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams', '-v7.3')
+    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'RFCIspin', ...
+    'sizeCI', 'oriparams', 'ori4params', '-v7.3')
 
 end
 %%

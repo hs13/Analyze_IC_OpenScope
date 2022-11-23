@@ -184,7 +184,7 @@ for ises = 1:Nsessions
     xlabel('camera pixels')
     ylabel('ICwcfg1 trial CDF')
     title(sprintf('%s: 8 vis deg ~%.0f pix\nwidth pupil %.0f eye %.0f', ...
-        nwbsessions{ises}, pupilwidth(ises), eyewidth(ises), pix8visdeg(ises) ))
+        nwbsessions{ises}, pix8visdeg(ises), pupilwidth(ises), eyewidth(ises) ))
 end
 
 figure; histogram(pix8visdeg, 'binwidth', 1)
@@ -192,13 +192,60 @@ xlabel('pixels corresponding to 8 visual degrees')
 ylabel('# Sessions')
 title(sprintf('min %.1f mean %.1f median %.1f', min(pix8visdeg), mean(pix8visdeg), median(pix8visdeg)))
 
+%% test gazedistthresh with RFCI blocks
+% note by HS 221119
+% 3/9 sessions are valid with gazedistthresh of 10
+% 6/9 sessions are valid with gazedistthresh of 20
+
+visagg = struct();
+for ises = 1:Nsessions
+pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+load(sprintf('%spostprocessed_probeC.mat', pathpp), 'vis')
+if ises==1
+visagg=vis;
+else
+visagg=cat(1, visagg, vis);
+end
+end
+
+gazedistthresh = 20;
+figure
+for ises = 1:Nsessions
+    subplot(3,3,ises); hold all
+    histogram(trialmaxdistmodecomagg(ises).RFCI_presentations, 'binwidth', 3, 'Normalization', 'cdf')
+    yl = ylim;
+    plot(gazedistthresh*[1 1], yl, 'r--')
+    ylim(yl)
+    xlim([0 50])
+    set(gca, 'FontSize', fs)
+    xlabel('camera pixels')
+    ylabel('RFCI trial CDF')
+    
+    temptrialorder = visagg(ises).RFCI_presentations.trialorder(1:4:end);
+    tempgazedist = trialmaxdistmodecomagg(ises).RFCI_presentations(1:4:end);
+    templikelyblink = triallikelyblinkagg(ises).RFCI_presentations(1:4:end);
+    temptrialsfixedgaze = tempgazedist<gazedistthresh & ~templikelyblink;
+    validRFCIfix = true;
+    fixcrftrials = temptrialsfixedgaze & floor(temptrialorder/10000) == 0;% &
+    if ~isequal( unique(floor(mod(temptrialorder(fixcrftrials), 1000) / 10)), (0:8)' )
+        validRFCIfix = false;
+    end
+    if validRFCIfix
+        titcol = [0 0 1];
+    else
+        titcol = [0.5 0.5 0.5];
+    end
+    title(sprintf('validRFCI %d %s: 8 vis deg ~%.0f pix\nwidth pupil %.0f eye %.0f', ...
+        validRFCIfix, nwbsessions{ises}, pix8visdeg(ises), pupilwidth(ises), eyewidth(ises) ), 'Color', titcol)
+end
+
 %% fixed gaze psthall and Rall
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
 % visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 % visind = [6 5 1 2 4 3];
 
 for ises = 1:Nsessions
-clearvars -except ises nwbsessions datadir
+clearvars -except ises nwbsessions Nsessions datadir
 sesclk = tic;
 fprintf('\nSession %d %s\n', ises, nwbsessions{ises})
 
@@ -207,7 +254,16 @@ load([pathpp 'info_units.mat'])
 load([pathpp 'trackmouseeye.mat'])
 visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
     'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
-gazedistthresh = 10;
+gazedistthresh = 20;
+
+trackeyetli = trialdistmodecom.RFCI_presentations.trackeyetli;
+trackeyetrialinds = trialdistmodecom.RFCI_presentations.psthtrialinds;
+trackeyepsth = trialdistmodecom.RFCI_presentations.psth;
+likelyblinkpsth = likelyblink(trackeyetrialinds);
+% for RFCIspin psthtli>0 & psthtli<=250
+endframe = round(0.25*60);
+spinmaxdistmodecom = max(trackeyepsth(:,trackeyetli>=0 & trackeyetli<endframe),[],2);
+spinlikelyblink = any(likelyblinkpsth(:,trackeyetli>=0 & trackeyetli<endframe), 2);
 
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
 psthtli = (-500:1000)';
@@ -217,10 +273,10 @@ neuoind = find(floor(unit_peakch/1000)==iprobe-1);
 neucnt = neucnt + numel(neuoind);
 fprintf('Probe %s: %d\n', probes{iprobe}, numel(neuoind) )
 
-ppfn = sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe});
-load(ppfn)
+load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
 load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe})); %, 'meanFRvec', 'sponFRvec')
 
+%{
 tloi = psthtli>0 & psthtli<=1000;
 tempR = squeeze(1000*mean(psth.RFCI_presentations(tloi,1:4:end,:), 1))';
 temptrialorder = vis.RFCI_presentations.trialorder(1:4:end);
@@ -232,8 +288,42 @@ fprintf('ctrCRF: pRFclassic* %d Pkw_rfclassic* %d sigmc_rfclassic %d RFsigexclcl
     nnz(RFCI.RFindclassic==1 & RFCI.RFsigexclclassic), ...
     nnz(RFCI.RFindclassic==1 & RFCI.RFexclsigclassic) )
 
+tloi = psthtli>0 & psthtli<=250;
+tempR = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
+temptrialorder = vis.RFCI_presentations.trialorder;
+RFCIspin = analyzeRFCIspin(tempR, temptrialorder, sponFRvec);
+
+%{
+% sanity check fails because of minor variations in duration of stim presentation
+fields2check = {'Rrfclassic', 'Rrfinverse', 'RFindclassic', 'RFindinverse'};
+checkspin = true;
+for f = 1:numel(fields2check)
+checkspin = checkspin && isequal(RFCI.(fields2check{f}), RFCIspin.(fields2check{f}));
+end
+if ~checkspin
+    error('inconsistency between RFCI and RFCIspin: check')
+end
+%}
+%{
+% note, R4 and R1000 mostly match except when stim presentation deviated
+% from exactly 250ms
+tloi = psthtli>0 & psthtli<=250;
+R250 = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
+tloi = psthtli>0 & psthtli<=1000;
+R1000 = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
+R4 = squeeze(mean(reshape(tempR,numel(neuoind),4,[]),2));
+figure; plot(R4, R1000(:,1:4:end), 'o')
+%}
+
+fprintf('spin ctrCRF: pRFclassic* %d Pfried_rfclassic* %d RFsigexclclassic %d RFexclsigclassic %d\n', ...
+    nnz(RFCIspin.RFindclassic==1 & RFCIspin.pRFclassic<0.05), ...
+    nnz(RFCIspin.RFindclassic==1 & RFCIspin.Pfried_rfclassic<0.05), ...
+    nnz(RFCIspin.RFindclassic==1 & RFCIspin.RFsigexclclassic), ...
+    nnz(RFCIspin.RFindclassic==1 & RFCIspin.RFexclsigclassic) )
+
 save(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}), ...
-    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams', '-v7.3')
+    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'RFCIspin', 'sizeCI', 'oriparams', '-v7.3')
+%}
 
 % %%
 ICtrialtypes = [0 101 105 106 107 109 110 111 506 511 1105 1109 1201 1299 ...
@@ -286,121 +376,15 @@ fixirftrials = temptrialsfixedgaze & floor(temptrialorder/10000) == 1;% & floor(
 if validRFCIfix
 RFCI_fixedgaze = analyzeRFCI(tempR(:,temptrialsfixedgaze), temptrialorder(temptrialsfixedgaze), sponFRvec);
 fprintf('fixed gaze ctrCRF: pRFclassic* %d Pkw_rfclassic* %d sigmc_rfclassic %d RFsigexclclassic %d RFexclsigclassic %d\n', ...
-    nnz(RFCI_presentations.RFindclassic==1 & RFCI_presentations.pRFclassic<0.05), ...
-    nnz(RFCI_presentations.RFindclassic==1 & RFCI_presentations.Pkw_rfclassic<0.05), ...
-    nnz(RFCI_presentations.RFindclassic==1 & RFCI_presentations.sigmc_rfclassic), ...
-    nnz(RFCI_presentations.RFindclassic==1 & RFCI_presentations.RFsigexclclassic), ...
-    nnz(RFCI_presentations.RFindclassic==1 & RFCI_presentations.RFexclsigclassic) )
+    nnz(RFCI_fixedgaze.RFindclassic==1 & RFCI_fixedgaze.pRFclassic<0.05), ...
+    nnz(RFCI_fixedgaze.RFindclassic==1 & RFCI_fixedgaze.Pkw_rfclassic<0.05), ...
+    nnz(RFCI_fixedgaze.RFindclassic==1 & RFCI_fixedgaze.sigmc_rfclassic), ...
+    nnz(RFCI_fixedgaze.RFindclassic==1 & RFCI_fixedgaze.RFsigexclclassic), ...
+    nnz(RFCI_fixedgaze.RFindclassic==1 & RFCI_fixedgaze.RFexclsigclassic) )
 else
     RFCI_fixedgaze = struct();
     disp('fixedgaze RFCI block skipped')
 end
-
-
-%sizeCI: each stim is 0.25s, inter-trial interval is 0.5s, drifting grating
-%szvec = [0, 4, 8, 16, 32, 64];
-% durstim = vis.sizeCI_presentations.stop_time-vis.sizeCI_presentations.start_time;
-% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
-% durstim = vis.sizeCI_presentations.start_time(2:end)-vis.sizeCI_presentations.stop_time(1:end-1);
-% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
-tloi = psthtli>0 & psthtli<=250;
-tempR = squeeze(1000*mean(psth.sizeCI_presentations(tloi,:,:), 1))';
-temptrialorder = vis.sizeCI_presentations.trialorder;
-temptrialsfixedgaze = trialmaxdistmodecom.sizeCI_presentations<gazedistthresh & ~triallikelyblink.sizeCI_presentations;
-[sizeCI_fixedgaze, oriparams_fixedgaze] = analyzesizeCI(tempR(:,temptrialsfixedgaze), temptrialorder(temptrialsfixedgaze) );
-
-
-save(sprintf('%svisresponses_fixedgaze%dpix_probe%s.mat', pathpp, gazedistthresh, probes{iprobe}), ...
-    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig_fixedgaze', 'RFCI_fixedgaze', ...
-    'sizeCI_fixedgaze', 'oriparams_fixedgaze', '-v7.3')
-
-end
-end
-
-%% RFCIspin
-for ises = 1:Nsessions
-clearvars -except ises nwbsessions datadir
-sesclk = tic;
-fprintf('\nSession %d %s\n', ises, nwbsessions{ises})
-
-visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
-    'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
-gazedistthresh = 10;
-
-probes = {'A', 'B', 'C', 'D', 'E', 'F'};
-psthtli = (-500:1000)';
-
-pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
-load([pathpp 'info_units.mat'])
-load([pathpp 'trackmouseeye.mat'])
-
-trackeyetli = trialdistmodecom.RFCI_presentations.trackeyetli;
-trackeyetrialinds = trialdistmodecom.RFCI_presentations.psthtrialinds;
-trackeyepsth = trialdistmodecom.RFCI_presentations.psth;
-likelyblinkpsth = likelyblink(trackeyetrialinds);
-% for RFCIspin psthtli>0 & psthtli<=250
-endframe = round(0.25*60);
-spinmaxdistmodecom = max(trackeyepsth(:,trackeyetli>=0 & trackeyetli<endframe),[],2);
-spinlikelyblink = any(likelyblinkpsth(:,trackeyetli>=0 & trackeyetli<endframe), 2);
-
-
-neucnt = 0;
-for iprobe = 1:numel(probes)
-neuoind = find(floor(unit_peakch/1000)==iprobe-1);
-neucnt = neucnt + numel(neuoind);
-fprintf('Probe %s: %d\n', probes{iprobe}, numel(neuoind) )
-
-load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
-load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe})); %, 'meanFRvec', 'sponFRvec')
-
-tloi = psthtli>0 & psthtli<=250;
-tempR = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
-temptrialorder = vis.RFCI_presentations.trialorder;
-RFCIspin = analyzeRFCIspin(tempR, temptrialorder, sponFRvec);
-
-%{
-% sanity check fails because of minor variations in duration of stim presentation
-fields2check = {'Rrfclassic', 'Rrfinverse', 'RFindclassic', 'RFindinverse'};
-checkspin = true;
-for f = 1:numel(fields2check)
-checkspin = checkspin && isequal(RFCI.(fields2check{f}), RFCIspin.(fields2check{f}));
-end
-if ~checkspin
-    error('inconsistency between RFCI and RFCIspin: check')
-end
-%}
-%{
-% note, R4 and R1000 mostly match except when stim presentation deviated
-% from exactly 250ms
-tloi = psthtli>0 & psthtli<=250;
-R250 = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
-tloi = psthtli>0 & psthtli<=1000;
-R1000 = squeeze(1000*mean(psth.RFCI_presentations(tloi,:,:), 1))';
-R4 = squeeze(mean(reshape(tempR,numel(neuoind),4,[]),2));
-figure; plot(R4, R1000(:,1:4:end), 'o')
-%}
-
-fprintf('spin ctrCRF: pRFclassic* %d Pfried_rfclassic* %d RFsigexclclassic %d RFexclsigclassic %d\n', ...
-    nnz(RFCIspin.RFindclassic==1 & RFCIspin.pRFclassic<0.05), ...
-    nnz(RFCIspin.RFindclassic==1 & RFCIspin.Pfried_rfclassic<0.05), ...
-    nnz(RFCIspin.RFindclassic==1 & RFCIspin.RFsigexclclassic), ...
-    nnz(RFCIspin.RFindclassic==1 & RFCIspin.RFexclsigclassic) )
-
-save(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}), ...
-    'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'RFCIspin', 'sizeCI', 'oriparams', '-v7.3')
-
-
-% RFCI: each stim is 0.25s, inter-trial interval is 0s, spinning grating
-% orientation denotation is same as psychtoolbox (0 is 12h, 45 is 1h30m, clockwise)
-% durstim = vis.RFCI_presentations.stop_time-vis.RFCI_presentations.start_time;
-% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
-% durstim = vis.RFCI_presentations.start_time(2:end)-vis.RFCI_presentations.stop_time(1:end-1);
-% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
-
-%RFCI: each stim is 0.25s, inter-trial interval is 0s, spinning drifting grating
-% 10000's: which type (classic 0 vs inverse 1), 1000's which ctrsizes, 
-% 10-100's: which RFcenter, 1's: which direction
-load(sprintf('%svisresponses_fixedgaze%dpix_probe%s.mat', pathpp, gazedistthresh, probes{iprobe}))
 
 tloi = psthtli>0 & psthtli<=250;
 temptrialsfixedgaze = spinmaxdistmodecom<gazedistthresh & ~spinlikelyblink;
@@ -421,21 +405,34 @@ else
     disp('fixedgaze RFCIspin block skipped')
 end
 
+
+%sizeCI: each stim is 0.25s, inter-trial interval is 0.5s, drifting grating
+%szvec = [0, 4, 8, 16, 32, 64];
+% durstim = vis.sizeCI_presentations.stop_time-vis.sizeCI_presentations.start_time;
+% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
+% durstim = vis.sizeCI_presentations.start_time(2:end)-vis.sizeCI_presentations.stop_time(1:end-1);
+% disp([mean(durstim) median(durstim) min(durstim) max(durstim)])
+tloi = psthtli>0 & psthtli<=250;
+tempR = squeeze(1000*mean(psth.sizeCI_presentations(tloi,:,:), 1))';
+temptrialorder = vis.sizeCI_presentations.trialorder;
+temptrialsfixedgaze = trialmaxdistmodecom.sizeCI_presentations<gazedistthresh & ~triallikelyblink.sizeCI_presentations;
+[sizeCI_fixedgaze, oriparams_fixedgaze, ori4params_fixedgaze] = analyzesizeCI(tempR(:,temptrialsfixedgaze), temptrialorder(temptrialsfixedgaze) );
+
+
 save(sprintf('%svisresponses_fixedgaze%dpix_probe%s.mat', pathpp, gazedistthresh, probes{iprobe}), ...
     'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'spinmaxdistmodecom', 'spinlikelyblink', ...
     'ICsig_fixedgaze', 'RFCI_fixedgaze', 'RFCIspin_fixedgaze', ...
-    'sizeCI_fixedgaze', 'oriparams_fixedgaze', '-v7.3')
+    'sizeCI_fixedgaze', 'oriparams_fixedgaze', 'ori4params_fixedgaze', '-v7.3')
 
 end
 end
 
 %% report number of ctrCRF neurons with different significance tests
-% HS 221119: 3/9 sessions have 
 for ises = 1:Nsessions
     %clearvars -except ises nwbsessions datadir
     fprintf('Session %d %s\n', ises, nwbsessions{ises})
     
-    gazedistthresh = 10;
+    gazedistthresh = 20;
     
     pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
     load([pathpp 'postprocessed_probeC.mat'], 'vis')

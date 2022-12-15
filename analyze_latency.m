@@ -24,16 +24,25 @@
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
-probes = {'A', 'B', 'C', 'D', 'E', 'F'};
-visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
-    'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
+% probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+% visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
+%     'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
+probes = {'C', 'D'};
+visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations'};
 
-datadir = 'D:\OpenScopeData\000248\';
+% datadir = 'D:\OpenScopeData\000248v220916\';
+% nwbdir = dir(datadir);
+% nwbsessions = {nwbdir.name}; 
+% nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
+% Nsessions = 4; %numel(nwbsessions)-1;
+
+datadir = 'D:\OpenScopeData\000248v221123\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
-nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
+Nsessions = numel(nwbsessions);
 
-Nsessions = 4; %numel(nwbsessions)-1;
 for ises = 1:Nsessions
     clearvars -except probes visblocks datadir nwbsessions Nsessions ises
     fprintf('Session %d/%d %s\n', ises, Nsessions, nwbsessions{ises} )
@@ -42,7 +51,7 @@ for ises = 1:Nsessions
     for iprobe = 1:numel(probes)
         tic
         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
-        % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
+%         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
         load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}))
         % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
         

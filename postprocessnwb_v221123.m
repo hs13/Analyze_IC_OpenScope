@@ -13,10 +13,15 @@ addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 addpath(genpath('H:\CODE\helperfunctions'))
 
-datadir = 'D:\OpenScopeData\000248\';
+datadir = 'D:\OpenScopeData\000248v221123\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
-nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
+
+
+
+%%
 for ises = 1:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;
@@ -24,12 +29,22 @@ sesclk = tic;
 % pathpp = 'D:\OpenScopeData\000248\sub-Placeholder\';
 % nwb = nwbRead('D:\OpenScopeData\000248\sub-Placeholder\sub-Placeholder.nwb');
 
-pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
-nwbfiles = dir([pathpp '*.nwb']);
-nwbspikefile = fullfile([nwbfiles(1).folder filesep nwbfiles(1).name]);
+if strcmp(datadir, 'D:\OpenScopeData\000248v221123\')
+    nwbfiles = cat(1, dir([datadir nwbsessions{ises} '\*.nwb']), dir([datadir nwbsessions{ises} '\*\*.nwb']));
+else
+    nwbfiles = dir([datadir nwbsessions{ises} '\*.nwb']);
+end
+% take filename with shortest length or filename that does not contain probe
+[~, fileind] = min(cellfun(@length, {nwbfiles.name}));
+nwbspikefile = fullfile([nwbfiles(fileind).folder filesep nwbfiles(fileind).name]);
 % nwbspikefile = string(nwbspikefile);
 disp(nwbspikefile)
 nwb = nwbRead(nwbspikefile); %, 'ignorecache');
+
+pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+if ~exist(pathpp, 'dir')
+    mkdir(pathpp)
+end
 
 %% where are the units from? probe position and within-probe electrode
 % position? brain area labels?

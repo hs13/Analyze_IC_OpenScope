@@ -299,13 +299,13 @@ validsizeinverse = true;
 % 10000s: which type (classic 0 vs inverse 1), 1000s which ctrsizes, 10-100s: which RFcenter, 1s: which direction'
 for szi = 1:Nsz
     csztrials = floor(trialorder/10000) == 0 & floor(mod(trialorder, 10000) / 1000) == szi ;
-    if nnz(csztrials)
+    if nnz(csztrials)==0
         validsizeclassic = false;
     end
     Rsizeclassic(:,szi) = mean(R(:, csztrials),2);
     
     isztrials = floor(trialorder/10000) == 1 & floor(mod(trialorder, 10000) / 1000) == szi ;
-    if nnz(csztrials)
+    if nnz(csztrials)==0
         validsizeinverse = false;
     end
     Rsizeinverse(:,szi) = mean(R(:, isztrials),2);

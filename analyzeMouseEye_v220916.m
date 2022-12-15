@@ -2,11 +2,18 @@ addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 addpath(genpath('H:\CODE\helperfunctions'))
 
-datadir = 'D:\OpenScopeData\000248\';
+% datadir = 'D:\OpenScopeData\000248v220916\';
+% nwbdir = dir(datadir);
+% nwbsessions = {nwbdir.name}; 
+% nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
+% Nsessions = numel(nwbsessions)-1;
+
+datadir = 'D:\OpenScopeData\000248v221123\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
-nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
-Nsessions = numel(nwbsessions)-1;
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
+Nsessions = numel(nwbsessions);
 
 for ises = 1:Nsessions
 clearvars -except ises nwbsessions datadir

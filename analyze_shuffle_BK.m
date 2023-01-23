@@ -5,6 +5,7 @@ nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 Nsessions = numel(nwbsessions);
 
+% HS 230104 aborted after session 14 finished 
 for ises = 1:Nsessions
 clearvars -except ises nwbsessions Nsessions datadir
 sesclk = tic;

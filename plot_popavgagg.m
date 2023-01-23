@@ -77,7 +77,8 @@ recarea = {'LGN', 'LP', 'V1', 'LM', 'RL', 'AL', 'PM', 'AM', ...
 
 % compare layers in V1
 neutypes = {'all', 'ICencoder', 'RCencoder', 'inducerencoder', 'indin', 'sigBK', 'sigBKnotsigBI'};
-Nneurons_fixedgazeagg = struct();
+Nneuronsacc = struct();
+Nneuronsagg = struct();
 for a = 1:numel(recarealabels)
     if strcmp(recarealabels{a}, 'VISp')
         neuinarea = contains(cat(1,neulocagg{:}), 'VISp') & ~contains(cat(1,neulocagg{:}), 'VISpm');
@@ -105,10 +106,10 @@ for b= 1:numel(ICblocks)
         end
         neuoi = neuinarea & neuoi;
         Nneuronsacc.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = nnz(neuoi);
-        Nneurons_fixedgazeagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = zeros(Nsessions, 1);
+        Nneuronsagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = zeros(Nsessions, 1);
         for ises = 1:Nsessions
             sesneu = cat(1,sesneuagg{:})==ises;
-            Nneurons_fixedgazeagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu})(ises) = nnz(neuoi & sesneu);
+            Nneuronsagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu})(ises) = nnz(neuoi & sesneu);
         end
     end
 end
@@ -121,7 +122,7 @@ pltmeanoragg = 2; % 1 is average proportion of neurons across sessions, 2 is agg
 
 fs = 10;
 figure
-annotation('textbox', [0.1 0.92 0.9 0.1], 'string', ['Fixed Gaze Trials: ' whichvisblock], 'edgecolor', 'none', 'interpreter', 'none')
+annotation('textbox', [0.1 0.92 0.9 0.1], 'string', ['All Trials: ' whichvisblock], 'edgecolor', 'none', 'interpreter', 'none')
 for ii = 1:2
     switch ii
         case 1
@@ -140,9 +141,9 @@ tempmat = NaN(numel(recareas),2);
 for a = 1:numel(recareas)
     switch pltmeanoragg
         case 1
-    denom = Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).ICencoder./denom);
-    tempmat(a,2) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).RCencoder./denom);
+    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).ICencoder./denom);
+    tempmat(a,2) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).RCencoder./denom);
         case 2
     denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
     tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).ICencoder/denom;
@@ -159,9 +160,9 @@ b(2).FaceColor = [1 0.5 0];
 b(2).EdgeColor = 'none';
 yl=ylim; yl = [0 1.2*yl(2)];
 for a = 1:numel(recareas)
-    denom = Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempICvec = Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).ICencoder./denom;
-    tempRCvec = Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).RCencoder./denom;
+    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
+    tempICvec = Nneuronsagg.(recarea{a}).(whichvisblock).ICencoder./denom;
+    tempRCvec = Nneuronsagg.(recarea{a}).(whichvisblock).RCencoder./denom;
     plot(a+.1*[-1 1], [tempICvec tempRCvec], '-', 'Color', [0.5 0.5 0.5 0.5])
     try
     p = signrank(tempICvec, tempRCvec);
@@ -187,7 +188,7 @@ end
 
 
 figure
-annotation('textbox', [0.1 0.92 0.9 0.1], 'string', ['Fixed Gaze Trials: ' whichvisblock], 'edgecolor', 'none', 'interpreter', 'none')
+annotation('textbox', [0.1 0.92 0.9 0.1], 'string', ['All Trials: ' whichvisblock], 'edgecolor', 'none', 'interpreter', 'none')
 for ii = 1:2
     switch ii
         case 1
@@ -206,9 +207,9 @@ tempmat = NaN(numel(recareas),2);
 for a = 1:numel(recareas)
     switch pltmeanoragg
         case 1
-    denom = Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).indin./denom);
-    tempmat(a,2) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).sigBKnotsigBI./denom);
+    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).indin./denom);
+    tempmat(a,2) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).sigBKnotsigBI./denom);
         case 2
     denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
     tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).indin/denom;

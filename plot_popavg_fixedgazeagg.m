@@ -70,6 +70,7 @@ recarea = {'LGN', 'LP', 'V1', 'LM', 'RL', 'AL', 'PM', 'AM', ...
 
 % compare layers in V1
 neutypes = {'all', 'ICencoder', 'RCencoder', 'inducerencoder', 'indin', 'sigBK', 'sigBKnotsigBI'};
+Nneurons_fixedgazeacc = struct();
 Nneurons_fixedgazeagg = struct();
 for a = 1:numel(recarealabels)
     if strcmp(recarealabels{a}, 'VISp')
@@ -97,7 +98,7 @@ for b= 1:numel(ICblocks)
                 neuoi = ICsig_fixedgazeagg.(ICblocks{b}).all.PkwBK<0.05 & ICsig_fixedgazeagg.(ICblocks{b}).all.PkwBI>=0.05;
         end
         neuoi = neuinarea & neuoi;
-        Nneuronsacc.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = nnz(neuoi);
+        Nneurons_fixedgazeacc.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = nnz(neuoi);
         Nneurons_fixedgazeagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = zeros(Nsessions, 1);
         for ises = 1:Nsessions
             sesneu = cat(1,sesneu_fixedgazeagg{:})==ises;
@@ -137,9 +138,9 @@ for a = 1:numel(recareas)
     tempmat(a,1) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).ICencoder./denom);
     tempmat(a,2) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).RCencoder./denom);
         case 2
-    denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).ICencoder/denom;
-    tempmat(a,2) = Nneuronsacc.(recarea{a}).(whichvisblock).RCencoder/denom;
+    denom = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).ICencoder/denom;
+    tempmat(a,2) = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).RCencoder/denom;
     end
 end
 yl = [0 .2];
@@ -203,9 +204,9 @@ for a = 1:numel(recareas)
     tempmat(a,1) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).indin./denom);
     tempmat(a,2) = nanmean(Nneurons_fixedgazeagg.(recarea{a}).(whichvisblock).sigBKnotsigBI./denom);
         case 2
-    denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).indin/denom;
-    tempmat(a,2) = Nneuronsacc.(recarea{a}).(whichvisblock).sigBKnotsigBI/denom;
+    denom = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).indin/denom;
+    tempmat(a,2) = Nneurons_fixedgazeacc.(recarea{a}).(whichvisblock).sigBKnotsigBI/denom;
     end
 end
 yl = [0 .2];

@@ -14,25 +14,15 @@ svmdesc = 'trainICRCtestRE';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
 
-justctx = true;
-if justctx
-    visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
-    pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep];
-else
-    visareas = {'A', 'B', 'C', 'D', 'E', 'F'};
-    probelabels = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
-    pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_allunits' filesep];
-end
-ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
-
-% visareas = {'VISp'};
-% ICblocknames = {'ICwcfg1'};
+visareas = {'LGd', 'LP', 'VISp2', 'VISp4', 'VISp5', 'VISp6'};
+ICblocknames = {'ICwcfg1'};
+pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_selectareas' filesep];
 
 % % initialize
-whichvisarea = visareas{1};
+whichvisarea = visareas{3};
 whichICblock = ICblocknames{1};
 pathsvm = [pathsv nwbsessions{1} filesep];
-svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_silencesubsets_', whichICblock, '.mat');
+svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_', whichICblock, '.mat');
 load(svmfn, 'SVMtrainICRC')
 
 icf=1; lmf = {'train', 'test', 'probe', 'REt', 'T', 'REx', 'X', 'blank'};
@@ -67,7 +57,7 @@ for a = 1:numel(visareas)
         disp(whichICblock)
         for ises = 1:Nsessions
             pathsvm = [pathsv nwbsessions{ises} filesep];
-            svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_silencesubsets_', whichICblock, '.mat');
+            svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_', whichICblock, '.mat');
             if ~exist(svmfn, 'file')
                 disp([svmfn ' does not exist'])
                 continue
@@ -150,7 +140,7 @@ for a = 1:numel(visareas)
 end % a
 toc
 
-save([pathsv 'HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
+save([pathsv 'HR_SVMtrainICRC_' preproc '_selectareas_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
 
 %% adjusted performance metrics
 if ~exist('dprime_SVMtrainICRC', 'var')
@@ -180,45 +170,28 @@ for a = 1:numel(visareas)
     end
 end
 
+%%
+%visareas = {'LGd', 'LP', 'VISp2', 'VISp4', 'VISp5', 'VISp6'};
+Nneuronsperarea = zeros(Nsessions, numel(visareas));
+for ises = 1:Nsessions
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 
-%% compare blocks V1
-fs = 14;
-whichvisarea = 'V1';
-xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
-ytl = {'REt1', 'REt2'};
-
-figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for b = 1:numel(ICblocknames)
-    whichICblock = ICblocknames{b};
-    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
-    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
-    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
-    p = signrank(hrvec - 1/length(traintrialtypes));
-    subplot(2,2,b)
-    imagesc(mean(tempHR, 3))
-    caxis([0 1]); colorbar
-    set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(xtl), 'YTickLabel', xtl)
-    title(sprintf('%s %.2f\np=%.4f', whichICblock, mean(hrvec), p) )
+    load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
+    load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
+    elecid = electrode_id+1;
+    revmapelecid = NaN(max(elecid),1);
+    revmapelecid(elecid) = 1:numel(elecid);
+    neuallloc = electrode_location(revmapelecid(unit_peakch+1));
+    
+    for a = 1:numel(visareas)
+        neu2anal = contains(neuallloc, visareas{a});
+        Nneuronsperarea(ises,a) = nnz(neu2anal);
+    end
 end
-colormap jet
-
-figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for b = 1:numel(ICblocknames)
-    whichICblock = ICblocknames{b};
-    subplot(2,2,b)
-    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
-    imagesc(mean(tempHR, 3))
-    caxis([0 1]); colorbar
-    set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(ytl), 'YTickLabel', ytl)
-    infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-    p = signrank(infscore);
-    title(sprintf('%s IC-RC %.2f\np=%.4f', whichICblock, mean(infscore), p) )
-end
-colormap jet
 
 %% compare areas
+discardbelowNneurons = 30;
+
 fs = 14;
 whichICblock = 'ICwcfg1';
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
@@ -231,12 +204,14 @@ for a = 1:numel(visareas)
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
     hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
     hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
-    p = signrank(hrvec - 1/length(traintrialtypes));
+    %sesoi = Nneuronsperarea(:,a)>=discardbelowNneurons;
+    sesoi = hrvec>1/length(traintrialtypes);
+    p = signrank(hrvec(sesoi) - 1/length(traintrialtypes));
     subplot(2,3,a)
-    imagesc(nanmean(tempHR, 3))
+    imagesc(nanmean(tempHR(:,:,sesoi), 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(xtl), 'YTickLabel', xtl)
-    title(sprintf('%s %.2f\np=%.4f', whichvisarea, nanmean(hrvec), p) )
+    title(sprintf('%s %.2f\np=%.4f', whichvisarea, mean(hrvec(sesoi)), p) )
 end
 colormap jet
 
@@ -244,30 +219,36 @@ figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for a = 1:numel(visareas)
     whichvisarea = visareas{a};
+    tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
+    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
+    %sesoi = Nneuronsperarea(:,a)>=discardbelowNneurons;
+    sesoi = hrvec>1/length(traintrialtypes);
     subplot(2,3,a)
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
-    imagesc(nanmean(tempHR, 3))
+    imagesc(nanmean(tempHR(:,:,sesoi), 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(ytl), 'YTickLabel', ytl)
     infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-    p = signrank(infscore);
-    title(sprintf('%s IC-RC %.2f\np=%.4f', whichvisarea, nanmean(infscore), p) )
+    p = signrank(infscore(sesoi));
+    title(sprintf('%s IC-RC %.2f\np=%.4f', whichvisarea, mean(infscore(sesoi)), p) )
 end
 colormap jet
 
-figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+
+figure
 for a = 1:numel(visareas)
     whichvisarea = visareas{a};
-    subplot(2,3,a)
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
     hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
-    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1)';
+    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
+    subplot(2,6,a)
+    plot(Nneuronsperarea(:,a), hrvec, 'o')
+    title(sprintf('%s %.2f\np=%.4f', whichvisarea, mean(hrvec), p) )
+    
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
     infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-    plot(hrvec, infscore, 'o')
-    %axis([0 1 -0.5 0.5])
-    set(gca, 'fontsize', fs, 'XGrid', 'on', 'YGrid', 'on')
-    [rho, p] = corr(hrvec, infscore, 'type', 'spearman', 'rows', 'complete');
-    title(sprintf('%s Spearman Corr %.2f\np=%.4f', whichvisarea, rho, p) )
+    subplot(2,6,6+a)
+    plot(Nneuronsperarea(:,a), infscore, 'o')
+    title(sprintf('%s IC-RC %.2f\np=%.4f', whichvisarea, mean(infscore), p) )
 end

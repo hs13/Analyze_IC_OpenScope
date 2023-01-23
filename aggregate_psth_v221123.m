@@ -1,7 +1,7 @@
 addpath(genpath('H:\CODE\helperfunctions'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 
-datadir = 'D:\OpenScopeData\000248\';
+datadir = 'D:\OpenScopeData\000248v221123\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
@@ -18,11 +18,10 @@ visind = [6 5 1 2 4 3];
 % kergauss = normpdf( (-kerwinhalf:kerwinhalf)', 0,kersigma);
 % kergauss = (kergauss/sum(kergauss));
 
-%% 
+%% WARNING: PROBE AND VISUAL AREAS SOMETIMES DO NOT MATCH UP!! 
 probevisareas = cell(Nsessions,numel(probes));
 for ises = 1:Nsessions
     fprintf('Session %d/%d %s\n', ises, Nsessions, nwbsessions{ises} )
-    
     pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
     load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
     load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
@@ -32,6 +31,11 @@ for ises = 1:Nsessions
     revmapelecid(elecid) = 1:numel(elecid);
     
     for iprobe = 1:numel(probes)
+%         tic
+%         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
+%         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
+        load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}))
+        % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
         
         probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
 %         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
@@ -62,7 +66,7 @@ disp(nwbsessions( ~all(contains(probevisareas, 'VISl'),2) & ~any(contains(probev
 disp('Sessions with seemingly correct CCF labels & layer info')
 disp(nwbsessions(any(contains(probevisareas, '2'),2))')
 
-% strcmp(probevisareas, 'VISl')
+strcmp(probevisareas, 'VISl')
 
 %% aggregate visresponses: ICsig, RFCI, RFCIspin, sizeCI, oriparams
 ises=1;
@@ -187,17 +191,13 @@ for ises = 1:Nsessions
     revmapelecid(elecid) = 1:numel(elecid);
     
     for iprobe = 1:numel(probes)
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
-        if nnz(floor(unit_peakch/1000)==probeind-1)==0
-        fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
-            continue
-        end
 %         tic
 %         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
 %         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
         load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}))
         % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
         
+        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
 %         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
 %             error('check neuoind')
 %         end
@@ -297,7 +297,6 @@ end
 
 visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
     'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
-ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations'};
 vistrialtypesagg = struct();
 vistrialrepagg = struct();
 vistrialorderagg = struct();
@@ -328,17 +327,12 @@ for ises = 1:Nsessions
     
     for iprobe = 1:numel(probesR)
         tic
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
-        if nnz(floor(unit_peakch/1000)==probeind-1)==0
-        fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
-            continue
-        end
-        
         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probesR{iprobe}))
         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
         %     load(sprintf('%svisresponses_probe%s.mat', pathpp, probesR{iprobe}))
         %     % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
         
+        probeind = find( strcmp(probesR{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
             error('check neuoind')
         end
@@ -424,7 +418,7 @@ for ises = 1:Nsessions
 end
 
 if aggpsth
-    save('D:\OpenScopeData\000248\postprocessed\psthavgagg.mat', 'probes', 'visareas', 'visind', 'nwbsessions', ...
+    save('D:\OpenScopeData\000248v221123\postprocessed\psthavgagg.mat', 'probes', 'visareas', 'visind', 'nwbsessions', ...
     	'probeneuronsagg', 'neulocagg', 'neupeakchagg', 'sesneuagg', 'neuctxagg', 'sesneuctxagg', ...
         'vistrialtypesagg', 'vistrialrepagg', 'vistrialorderagg', ...
         'ICblocks', 'ICtrialtypes', 'psthtli', 'psthavgagg', 'Ronavgagg', 'Roffavgagg', '-v7.3')

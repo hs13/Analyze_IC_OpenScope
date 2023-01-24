@@ -1,23 +1,25 @@
 datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
-nwbsessions = {nwbdir.name};
-nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
-Nsessions = 4; %numel(nwbsessions)-1;
+nwbsessions = {nwbdir.name}; 
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
+Nsessions = numel(nwbsessions);
 
-% visareas = {'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam'};
+% visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 % ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
 
-whichvisarea = 'VISp';
+whichvisarea = 'V1';
 whichICblock = 'ICwcfg1';
 
 svmdesc = 'trainICRCtestRE';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
+pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep];
 
 SVMsilICRCagg = struct();
 tic
 for ises = 1:Nsessions
-    pathsvm = [datadir 'SVM_' svmdesc filesep nwbsessions{ises} filesep];
+    pathsvm = [pathsv nwbsessions{ises} filesep];
     svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_silencesubsets_', whichICblock, '.mat');
     if exist(svmfn, 'file')
         load(svmfn, 'SVMtrainICRC')
@@ -28,7 +30,7 @@ for ises = 1:Nsessions
 end
 toc
 
-%%
+% %%
 silencedescs = SVMtrainICRC.silencedescs;
 lmf = {'train', 'test', 'probe', 'REt', 'REx', 'X', 'blank'};
 
@@ -41,6 +43,7 @@ Ntt = numel(traintrialtypes);
 Nprobett = numel(probetrialtypes);
 
 HR_SVMsilICRC.(whichvisarea) = struct();
+tic
 for isd = 0:numel(silencedescs)
     if isd == 0
         sil = '';
@@ -132,6 +135,10 @@ for isd = 0:numel(silencedescs)
         end
     end
 end
+toc
+
+save([pathsv 'HR_SVMsilICRC_' preproc '_' whichICblock '_' whichvisarea '_agg.mat'], 'HR_SVMsilICRC', '-v7.3')
+save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMsilICRC_' preproc '_' whichICblock '_' whichvisarea '_agg.mat'], 'HR_SVMsilICRC', '-v7.3')
 
 % %% print results
 disp(['SVMtrainICRC', whichSVMkernel])

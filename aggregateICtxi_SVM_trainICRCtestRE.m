@@ -7,7 +7,6 @@ nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
-
 Nsessions = numel(nwbsessions);
 
 svmdesc = 'trainICRCtestRE';
@@ -151,6 +150,7 @@ end % a
 toc
 
 save([pathsv 'HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
+save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
 
 %% adjusted performance metrics
 if ~exist('dprime_SVMtrainICRC', 'var')

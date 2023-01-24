@@ -77,7 +77,7 @@ if length(dirvec)~=Ndirs
     error('check sizeCI_presentations directions')
 end
 orivec = vis.sizeCI_presentations.directions(1:Noris);
-
+szvec = [0, 4, 8, 16, 32, 64];
 %% V1: pref-ori distribution of IC/RC encoders
 % RUN AFTER RUNNING FIRST TWO SECTIONS OF aggregate_psth
 whichprobe = 'all';
@@ -106,6 +106,75 @@ prefioriagg = ori4paramsagg.(whichprobe).prefiori4;
 sigori = ori4paramsagg.(whichprobe).Pkw_ori4<0.05; % & ori4paramsagg.(whichprobe).OSI4>0.5;
 Rori = ori4paramsagg.(whichprobe).Rori4(:,1:4);
 end
+
+normopt = false;
+if normopt
+    normRori = Rori./max(Rori,[],2);
+else
+    normRori = Rori;
+end
+fs = 12;
+xtorder = [4 1 2 3]; xtl = [-45 0 45 90];
+xtorder = 1:4; xtl = orivec;
+figure
+for ienc = 1:4
+    subplot(2,2,ienc)
+    hold all
+    switch ienc
+        case 1
+            neuoi = ICsigagg.ICwcfg0_presentations.(whichprobe).ICencoder2==1;
+            neuoi = ismember(ICsigagg.ICwcfg0_presentations.(whichprobe).sigmcBK, [0 0 0 1], 'rows');
+        case 2
+            neuoi = ICsigagg.ICwcfg1_presentations.(whichprobe).ICencoder2==1;
+            neuoi = ismember(ICsigagg.ICwcfg1_presentations.(whichprobe).sigmcBK, [0 0 0 1], 'rows');
+        case 3
+            neuoi = ICsigagg.ICwcfg0_presentations.(whichprobe).ICencoder1==1;
+            neuoi = ismember(ICsigagg.ICwcfg0_presentations.(whichprobe).sigmcBK, [1 0 0 0], 'rows');
+        case 4
+            neuoi = ICsigagg.ICwcfg1_presentations.(whichprobe).ICencoder1==1;
+            neuoi = ismember(ICsigagg.ICwcfg1_presentations.(whichprobe).sigmcBK, [1 0 0 0], 'rows');
+    end
+    %     neuoi = neuoi & neuinarea & sigori;
+    errorbar(xtl, nanmean(normRori(neuoi,xtorder),1), nanstd(normRori(neuoi,xtorder),0,1)/sqrt(nnz(neuoi)), 'ko-', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'LineWidth', 2)
+    xlim([xtl(1) xtl(end)])
+    set(gca, 'XTick', xtl, 'FontSize', fs)
+    if normopt
+        ylabel('Normalized Firing Rate', 'FontSize', fs)
+    else
+        ylabel('Firing Rate (Hz)', 'FontSize', fs)
+    end
+    xlabel('Orientation (deg)', 'FontSize', fs)
+    title(sprintf('%d-deg IC-encoder (N=%d)', orivec(ienc), nnz(neuoi)), 'FontSize', fs)
+end
+
+fs = 14;
+xtorder = [4 1 2 3];
+xtl = [-45 0 45 90];
+figure('Position', [100 100 300 300])
+hold all
+for ienc = 1%:4
+    switch ienc
+        case 1
+            neuoi = ICsigagg.ICwcfg0_presentations.(whichprobe).ICencoder2==1;
+            neuoi = ismember(ICsigagg.ICwcfg0_presentations.(whichprobe).sigmcBK, [0 0 0 1], 'rows');
+        case 2
+            neuoi = ICsigagg.ICwcfg1_presentations.(whichprobe).ICencoder2==1;
+            neuoi = ismember(ICsigagg.ICwcfg1_presentations.(whichprobe).sigmcBK, [0 0 0 1], 'rows');
+        case 3
+            neuoi = ICsigagg.ICwcfg0_presentations.(whichprobe).ICencoder1==1;
+            neuoi = ismember(ICsigagg.ICwcfg0_presentations.(whichprobe).sigmcBK, [1 0 0 0], 'rows');
+        case 4
+            neuoi = ICsigagg.ICwcfg1_presentations.(whichprobe).ICencoder1==1;
+            neuoi = ismember(ICsigagg.ICwcfg1_presentations.(whichprobe).sigmcBK, [1 0 0 0], 'rows');
+    end
+%     neuoi = neuoi & neuinarea & sigori;
+    errorbar(xtl, mean(Rori(neuoi,xtorder),1), std(Rori(neuoi,xtorder),0,1)/sqrt(nnz(neuoi)), 'ko-', 'MarkerSize', 10, 'MarkerFaceColor', 'k', 'LineWidth', 2)
+end
+xlim([xtl(1) xtl(end)])
+set(gca, 'XTick', xtl, 'FontSize', fs)
+ylabel('Firing Rate (Hz)', 'FontSize', fs)
+xlabel('Orientation (deg)', 'FontSize', fs)
+title(sprintf('0-deg IC-encoder (N=%d)', nnz(neuoi)), 'FontSize', fs)
 
 % % sanity check
 % figure; histogram2(ori4paramsagg.(whichprobe).prefiori4(sigori), ori4paramsagg.(whichprobe).prefiori4678(sigori), 'displaystyle', 'tile')

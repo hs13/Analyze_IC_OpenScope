@@ -190,7 +190,7 @@ for ises = 1:Nsessions
 end
 
 %% compare areas
-discardbelowNneurons = 30;
+discardbelowNneurons = 50;
 
 fs = 14;
 whichICblock = 'ICwcfg1';

@@ -1,21 +1,16 @@
-
-% datadir = 'D:\OpenScopeData\000248\';
-% nwbdir = dir(datadir);
-% nwbsessions = {nwbdir.name};
-% nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
-% Nsessions = numel(nwbsessions)-1;
-
-datadir = '/Users/hyeyoung/Documents/OpenScopeData/';
-nwbsessions = {'sub-1171903426','sub-1172969386','sub-1174569632','sub-1175512776', ...
-    'sub-1177693335','sub-1181585601','sub-1182593224','sub-1183369796','sub-1186544719'};
+datadir = 'D:\OpenScopeData\000248\';
+nwbdir = dir(datadir);
+nwbsessions = {nwbdir.name}; 
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 Nsessions = numel(nwbsessions);
 
 fixgaze = false;
-justctx = false;
-subsetgroups = {'sigkw'}; % 'sigkw', 'encoder', 'CGIG'
+justctx = true;
+subsetgroups = {'encoder'}; % 'sigkw', 'encoder', 'CGIG'
 
-whichvisarea = 'C';
-whichICblock = 'ICkcfg1';
+whichvisarea = 'V1';
+whichICblock = 'ICwcfg1';
 
 svmdesc = 'trainICRCtestRE';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
@@ -32,15 +27,15 @@ for g = 1:numel(subsetgroups)
     whichsubsetgroup = subsetgroups{g};
     if justctx
         if fixgaze
-            pathsv = [datadir 'SVM_fixedgaze_' svmdesc '_subsets_' whichsubsetgroup filesep];
+            pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_fixedgaze_' svmdesc '_subsets_' whichsubsetgroup filesep];
         else
-            pathsv = [datadir 'SVM_' svmdesc '_subsets_' whichsubsetgroup filesep];
+            pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_subsets_' whichsubsetgroup filesep];
         end
     else
         if fixgaze
-            pathsv = [datadir 'SVM_fixedgaze_' svmdesc '_subsets_' whichsubsetgroup '_allunits' filesep];
+            pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_fixedgaze_' svmdesc '_subsets_' whichsubsetgroup '_allunits' filesep];
         else
-            pathsv = [datadir 'SVM_' svmdesc '_subsets_' whichsubsetgroup '_allunits' filesep];
+            pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_subsets_' whichsubsetgroup '_allunits' filesep];
         end
     end
 
@@ -62,7 +57,7 @@ end
 end
 toc
 
-%%
+% %%
 Nallneurons = zeros(Nsessions,1);
 for ises = 1:Nsessions
     Nallneurons(ises) = SVMsubICRCagg(ises).(whichsubsetgroup).Nneurons;
@@ -81,7 +76,7 @@ end
 end
 end
 
-%%
+% %%
 subsetdescs = SVMtrainICRC.subsetdescs;
 lmf = {'train', 'test', 'probe', 'REt', 'REx', 'X', 'blank'};
 
@@ -190,6 +185,12 @@ for s = 1:numel(subsetdescs)
     
 end
 toc
+
+
+save([pathsv 'HR_SVMsubICRC_' preproc '_' whichICblock '_' whichvisarea '_agg.mat'], 'Nallneurons', 'Nsubsetneurons', 'HR_SVMsubICRC', '-v7.3')
+save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMsubICRC_' preproc '_' whichICblock '_' whichvisarea '_agg.mat'], 'Nallneurons', 'Nsubsetneurons', 'HR_SVMsubICRC', '-v7.3')
+
+
 
 %% subsets
 pltopt = 1;

@@ -2,29 +2,25 @@
 % instead of aggregating SVMtrainRExagg, compute HR_SVMtrainREx while loading SVMtrainREx
 
 %% takes 48 min
-% datadir = 'D:\OpenScopeData\000248\';
-% nwbdir = dir(datadir);
-% nwbsessions = {nwbdir.name};
-% nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
-% Nsessions = numel(nwbsessions)-1;
-
-datadir = '/Users/hyeyoung/Documents/OpenScopeData/';
-nwbsessions = {'sub-1171903426','sub-1172969386','sub-1174569632','sub-1175512776', ...
-    'sub-1177693335','sub-1181585601','sub-1182593224','sub-1183369796','sub-1186544719'};
+datadir = 'D:\OpenScopeData\000248\';
+nwbdir = dir(datadir);
+nwbsessions = {nwbdir.name}; 
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 Nsessions = numel(nwbsessions);
 
 svmdesc = 'trainRExtestICRC';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
 
-justctx = false;
+justctx = true;
 if justctx
-    visareas = {'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam'};
-    pathsv = [datadir 'SVM_' svmdesc filesep];
+    visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+    pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep];
 else
     visareas = {'A', 'B', 'C', 'D', 'E', 'F'};
     probelabels = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
-    pathsv = [datadir 'SVM_' svmdesc '_allunits' filesep];
+    pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_allunits' filesep];
 end
 ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
 
@@ -124,6 +120,7 @@ for a = 1:numel(visareas)
 end % a
 toc
 save([pathsv 'HR_SVMtrainREx_' preproc '_agg.mat'], 'HR_SVMtrainREx', '-v7.3')
+save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMtrainREx_' preproc '_agg.mat'], 'HR_SVMtrainREx', '-v7.3')
 
 %% adjusted performance metrics
 if ~exist('dprime_SVMtrainREx', 'var')
@@ -155,8 +152,7 @@ end
 
 
 %% compare blocks V1
-whichvisarea = 'VISp';
-whichvisarea = 'C';
+whichvisarea = 'V1';
 fs = 14;
 xtl = {'REx1', 'REx2'};
 ytl = {'IC1', 'RC1', 'RC2', 'IC2'};
@@ -207,10 +203,10 @@ for a = 1:numel(visareas)
     hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
     p = signrank(hrvec - 1/length(traintrialtypes));
     subplot(2,3,a)
-    imagesc(mean(tempHR, 3))
+    imagesc(nanmean(tempHR, 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(xtl), 'YTickLabel', xtl)
-    title(sprintf('%s %.2f p=%.4f', whichvisarea, mean(hrvec), p) )
+    title(sprintf('%s %.2f p=%.4f', whichvisarea, nanmean(hrvec), p) )
 end
 colormap jet
 
@@ -220,11 +216,11 @@ for a = 1:numel(visareas)
     whichvisarea = visareas{a};
     subplot(2,3,a)
     tempHR = squeeze(nanmean(HR_SVMtrainREx.(whichICblock).(whichvisarea).probe, 3 ));
-    imagesc(mean(tempHR, 3))
+    imagesc(nanmean(tempHR, 3))
     caxis([0 1]); colorbar
     set(gca, 'fontsize', fs, 'XTick', 1:numel(xtl), 'XTickLabel', xtl, 'YTick', 1:numel(ytl), 'YTickLabel', ytl)
     infscore = squeeze( (( tempHR(1,1,:)-0.5 )+( tempHR(4,2,:)-0.5 ))/2 );
     p = signrank(infscore);
-    title(sprintf('%s IC-chance\nmean %.2f p=%.4f', whichvisarea, mean(infscore), p) )
+    title(sprintf('%s IC-chance\nmean %.2f p=%.4f', whichvisarea, nanmean(infscore), p) )
 end
 colormap jet

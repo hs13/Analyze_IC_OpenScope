@@ -30,7 +30,7 @@ for ises = 1:Nsessions
 end
 toc
 
-% %%
+%%
 silencedescs = SVMtrainICRC.silencedescs;
 lmf = {'train', 'test', 'probe', 'REt', 'REx', 'X', 'blank'};
 
@@ -108,7 +108,7 @@ for isd = 0:numel(silencedescs)
                         tempysvm = SVMsilICRCagg(ises).(whichvisarea).spkcnt.(['probe' sil]).label(tempoi,isplit);
                     case 'blank'
                         tempyind = SVMsilICRCagg(ises).(whichvisarea).alltrials;
-                        tempysvm = SVMsilICRCagg(ises).(whichvisarea).spkcnt.all.label(:,isplit);
+                        tempysvm = SVMsilICRCagg(ises).(whichvisarea).spkcnt.(['all' sil]).label(:,isplit);
                         tempyu = 0;
                 end
                 tempysvm = cellfun(@str2num, tempysvm);
@@ -127,7 +127,7 @@ for isd = 0:numel(silencedescs)
                     trialsnoty = tempy~=tempyu(iy);
                     %trialsnoty = true(size(tempy));
                     for jy = 1:numel(traintrialtypes)
-                        HR_SVMsilICRC.(whichvisarea).(lmf{lm})(iy,jy,isplit,ises) = nnz(tempysvm(trialsoy)==traintrialtypes(jy))/nnz(trialsoy);
+                        HR_SVMsilICRC.(whichvisarea).([lmf{lm} sil])(iy,jy,isplit,ises) = nnz(tempysvm(trialsoy)==traintrialtypes(jy))/nnz(trialsoy);
                     end
                 end
                 
@@ -182,35 +182,54 @@ for a = 1:numel(visareas)
 end
 
 
-%% compare blocks V1
-fs = 14;
+%% compare silence groups
+whichvisarea = 'V1';
+fs = 8;
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for isd = 0:numel(silencedescs)
-        subplot(4,numel(silencedescs)+1,(numel(silencedescs)+1)*(ises-1)+isd)
-        tempHR = squeeze(nanmean(HR_SVMsilICRC.VISp.test(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
-        title(sprintf('Session%d %s %.4f', ises, whichICblock, mean(diag(tempHR))) )
+annotation('textbox', [0.1 0.9 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+for isd = 0:numel(silencedescs)
+    subplot(5,6,isd+1)
+    if isd==0
+        tempHR = squeeze(nanmean(HR_SVMsilICRC.(whichvisarea).test, 3 ));
+    else
+        tempHR = squeeze(nanmean(HR_SVMsilICRC.(whichvisarea).(['test_' silencedescs{isd}]), 3 ));
     end
+    imagesc(squeeze(nanmean(tempHR,3)))
+    testscore = squeeze( ( tempHR(1,1,:)+tempHR(2,2,:)+tempHR(3,3,:)+tempHR(4,4,:) )/4 );
+    p= signrank(testscore-0.25);
+    if isd==0
+    title(sprintf('all neurons in area test %.2f\np=%.4f', mean(testscore), p) )
+    else
+    title(sprintf('zero-out %s test %.2f\np=%.4f', silencedescs{isd}, mean(testscore), p) )
+    end
+    caxis([0 0.5]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', xtl)
 end
 colormap jet
 
 ytl = {'REt1', 'REt2'};
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM V1 probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
-for ises = 1:4
-    for isd = 0:numel(silencedescs)
-        subplot(4,numel(silencedescs)+1,(numel(silencedescs)+1)*(ises-1)+isd)
-        tempHR = squeeze(nanmean(HR_SVMsilICRC.VISp.REt(:,:,:,ises), 3 ));
-        imagesc(tempHR)
-        caxis([0 1]); colorbar
-        set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
-        infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
-        title(sprintf('Session%d %s IC-RC %.4f', ises, whichICblock, mean(infscore)) )
+annotation('textbox', [0.1 0.9 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' ' whichvisarea ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+for isd = 0:numel(silencedescs)
+    subplot(5,6,isd+1)
+    if isd==0
+        tempHR = squeeze(nanmean(HR_SVMsilICRC.(whichvisarea).REt, 3 ));
+    else
+        tempHR = squeeze(nanmean(HR_SVMsilICRC.(whichvisarea).(['REt_' silencedescs{isd}]), 3 ));
+    end
+    imagesc(squeeze(nanmean(tempHR,3)))
+    caxis([0 0.5]); colorbar
+    set(gca, 'fontsize', fs, 'XTick', 1:4, 'XTickLabel', xtl, 'YTick', 1:4, 'YTickLabel', ytl)
+    infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
+    p= signrank(infscore);
+    infscore1 = squeeze( tempHR(1,1,:)-tempHR(1,2,:) );
+    infscore2 = squeeze( tempHR(1,1,:)-tempHR(1,2,:) );
+    ppool= signrank([infscore1; infscore2]);
+    if isd==0
+    title(sprintf('all neurons in area IC-RC %.2f\np=%.4f p_p_o_o_l=%.4f', mean(infscore), p, ppool) )
+    else
+    title(sprintf('zero-out %s IC-RC %.2f\np=%.4f p_p_o_o_l=%.4f', silencedescs{isd}, mean(infscore), p, ppool) )
     end
 end
 colormap jet

@@ -153,12 +153,12 @@ end
 
 %% compare blocks V1
 whichvisarea = 'V1';
-fs = 14;
+fs = 12;
 xtl = {'REx1', 'REx2'};
 ytl = {'IC1', 'RC1', 'RC2', 'IC2'};
 
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.92 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for b = 1:numel(ICblocknames)
     whichICblock = ICblocknames{b};
     tempHR = squeeze(nanmean(HR_SVMtrainREx.(whichICblock).(whichvisarea).test, 3 ));
@@ -174,7 +174,7 @@ end
 colormap jet
 
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.92 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for b = 1:numel(ICblocknames)
     whichICblock = ICblocknames{b};
     subplot(2,2,b)
@@ -190,12 +190,12 @@ colormap jet
 
 %% compare areas
 whichICblock = 'ICwcfg1';
-fs = 12;
+fs = 10;
 xtl = {'REx1', 'REx2'};
 ytl = {'IC1', 'RC1', 'RC2', 'IC2'};
 
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.92 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for a = 1:numel(visareas)
     whichvisarea = visareas{a};
     tempHR = squeeze(nanmean(HR_SVMtrainREx.(whichICblock).(whichvisarea).test, 3 ));
@@ -211,7 +211,7 @@ end
 colormap jet
 
 figure;
-annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
+annotation('textbox', [0.1 0.92 0.8 0.1], 'string', [preproc ' SVM ' whichICblock ' probe accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for a = 1:numel(visareas)
     whichvisarea = visareas{a};
     subplot(2,3,a)

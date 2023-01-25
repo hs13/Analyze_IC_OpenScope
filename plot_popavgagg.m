@@ -70,7 +70,7 @@ end
 % compare areas
 recarealabels = {'LGd', 'LP', 'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam', ...
     'VISp1', 'VISp2/3', 'VISp4', 'VISp5', 'VISp6a', 'VISp6b'};
-recarea = {'LGN', 'LP', 'V1', 'LM', 'RL', 'AL', 'PM', 'AM', ...
+recareas = {'LGN', 'LP', 'V1', 'LM', 'RL', 'AL', 'PM', 'AM', ...
     'V1L1', 'V1L23', 'V1L4', 'V1L5', 'V1L6a', 'V1L6b'};
 
 % VISp NOT VISpm
@@ -105,11 +105,11 @@ for b= 1:numel(ICblocks)
                 neuoi = ICsigagg.(ICblocks{b}).all.PkwBK<0.05 & ICsigagg.(ICblocks{b}).all.PkwBI>=0.05;
         end
         neuoi = neuinarea & neuoi;
-        Nneuronsacc.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = nnz(neuoi);
-        Nneuronsagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu}) = zeros(Nsessions, 1);
+        Nneuronsacc.(recareas{a}).(ICblocks{b}).(neutypes{ineu}) = nnz(neuoi);
+        Nneuronsagg.(recareas{a}).(ICblocks{b}).(neutypes{ineu}) = zeros(Nsessions, 1);
         for ises = 1:Nsessions
             sesneu = cat(1,sesneuagg{:})==ises;
-            Nneuronsagg.(recarea{a}).(ICblocks{b}).(neutypes{ineu})(ises) = nnz(neuoi & sesneu);
+            Nneuronsagg.(recareas{a}).(ICblocks{b}).(neutypes{ineu})(ises) = nnz(neuoi & sesneu);
         end
     end
 end
@@ -141,13 +141,13 @@ tempmat = NaN(numel(recareas),2);
 for a = 1:numel(recareas)
     switch pltmeanoragg
         case 1
-    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).ICencoder./denom);
-    tempmat(a,2) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).RCencoder./denom);
+    denom = Nneuronsagg.(recareas{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = nanmean(Nneuronsagg.(recareas{a}).(whichvisblock).ICencoder./denom);
+    tempmat(a,2) = nanmean(Nneuronsagg.(recareas{a}).(whichvisblock).RCencoder./denom);
         case 2
-    denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).ICencoder/denom;
-    tempmat(a,2) = Nneuronsacc.(recarea{a}).(whichvisblock).RCencoder/denom;
+    denom = Nneuronsacc.(recareas{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = Nneuronsacc.(recareas{a}).(whichvisblock).ICencoder/denom;
+    tempmat(a,2) = Nneuronsacc.(recareas{a}).(whichvisblock).RCencoder/denom;
     end
 end
 yl = [0 .2];
@@ -160,9 +160,9 @@ b(2).FaceColor = [1 0.5 0];
 b(2).EdgeColor = 'none';
 yl=ylim; yl = [0 1.2*yl(2)];
 for a = 1:numel(recareas)
-    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempICvec = Nneuronsagg.(recarea{a}).(whichvisblock).ICencoder./denom;
-    tempRCvec = Nneuronsagg.(recarea{a}).(whichvisblock).RCencoder./denom;
+    denom = Nneuronsagg.(recareas{a}).(whichvisblock).(neudenom);
+    tempICvec = Nneuronsagg.(recareas{a}).(whichvisblock).ICencoder./denom;
+    tempRCvec = Nneuronsagg.(recareas{a}).(whichvisblock).RCencoder./denom;
     plot(a+.1*[-1 1], [tempICvec tempRCvec], '-', 'Color', [0.5 0.5 0.5 0.5])
     try
     p = signrank(tempICvec, tempRCvec);
@@ -207,13 +207,13 @@ tempmat = NaN(numel(recareas),2);
 for a = 1:numel(recareas)
     switch pltmeanoragg
         case 1
-    denom = Nneuronsagg.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).indin./denom);
-    tempmat(a,2) = nanmean(Nneuronsagg.(recarea{a}).(whichvisblock).sigBKnotsigBI./denom);
+    denom = Nneuronsagg.(recareas{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = nanmean(Nneuronsagg.(recareas{a}).(whichvisblock).indin./denom);
+    tempmat(a,2) = nanmean(Nneuronsagg.(recareas{a}).(whichvisblock).sigBKnotsigBI./denom);
         case 2
-    denom = Nneuronsacc.(recarea{a}).(whichvisblock).(neudenom);
-    tempmat(a,1) = Nneuronsacc.(recarea{a}).(whichvisblock).indin/denom;
-    tempmat(a,2) = Nneuronsacc.(recarea{a}).(whichvisblock).sigBKnotsigBI/denom;
+    denom = Nneuronsacc.(recareas{a}).(whichvisblock).(neudenom);
+    tempmat(a,1) = Nneuronsacc.(recareas{a}).(whichvisblock).indin/denom;
+    tempmat(a,2) = Nneuronsacc.(recareas{a}).(whichvisblock).sigBKnotsigBI/denom;
     end
 end
 yl = [0 .2];

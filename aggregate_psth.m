@@ -6,7 +6,6 @@ nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
-
 Nsessions = numel(nwbsessions);
 
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL

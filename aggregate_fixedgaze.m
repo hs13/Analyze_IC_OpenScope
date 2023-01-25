@@ -1,14 +1,14 @@
 addpath(genpath('H:\CODE\helperfunctions'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 
-datadir = 'D:\OpenScopeData\000248v221123\';
+datadir = 'D:\OpenScopeData\000248\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
+Nsessions = numel(nwbsessions);
 
 gazedistthresh = 20;
-Nsessions = numel(nwbsessions);
 
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
@@ -451,7 +451,11 @@ end
 end
 
 if aggpsth
-    save('D:\OpenScopeData\000248v221123\postprocessed\psthavg_fixedgazeagg.mat', 'probes', 'visareas', 'visind', 'nwbsessions', ...
+    save([datadir 'postprocessed\psthavg_fixedgazeagg.mat'], 'probes', 'visareas', 'visind', 'nwbsessions', ...
+    	'probeneurons_fixedgazeagg', 'neuloc_fixedgazeagg', 'neupeakch_fixedgazeagg', 'sesneu_fixedgazeagg', 'neuctx_fixedgazeagg', 'sesneuctx_fixedgazeagg', ...
+        'vistrialtypes_fixedgazeagg', 'vistrialrep_fixedgazeagg', 'vistrialorder_fixedgazeagg', 'vistrial_fixedgazeagg', ...
+        'ICblocks', 'ICtrialtypes', 'psthtli', 'psthavg_fixedgazeagg', 'Ronavg_fixedgazeagg', 'Roffavg_fixedgazeagg', '-v7.3')
+    save('G:\My Drive\DATA\ICexpts_submission22\openscope_psthavg_fixedgazeagg.mat', 'probes', 'visareas', 'visind', 'nwbsessions', ...
     	'probeneurons_fixedgazeagg', 'neuloc_fixedgazeagg', 'neupeakch_fixedgazeagg', 'sesneu_fixedgazeagg', 'neuctx_fixedgazeagg', 'sesneuctx_fixedgazeagg', ...
         'vistrialtypes_fixedgazeagg', 'vistrialrep_fixedgazeagg', 'vistrialorder_fixedgazeagg', 'vistrial_fixedgazeagg', ...
         'ICblocks', 'ICtrialtypes', 'psthtli', 'psthavg_fixedgazeagg', 'Ronavg_fixedgazeagg', 'Roffavg_fixedgazeagg', '-v7.3')

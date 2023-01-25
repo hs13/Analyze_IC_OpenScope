@@ -771,3 +771,16 @@ neuoi = wemerge & (ori4paramsagg.(whichprobe).prefiori4==2 | ori4paramsagg.(whic
 corr(ori4paramsagg.(whichprobe).OP4678(neuoi), ICsigagg.ICwcfg0_presentations.(whichprobe).SP_ICvsRC(neuoi), 'type', 'spearman')
 figure; plot(ori4paramsagg.(whichprobe).OP4678(neuoi), ICsigagg.ICwcfg1_presentations.(whichprobe).SP_ICvsRC(neuoi), 'o')
 figure; histogram2(ori4paramsagg.(whichprobe).OP4678(neuoi), ICsigagg.ICwcfg1_presentations.(whichprobe).SP_ICvsRC(neuoi), 'displaystyle', 'tile')
+
+%% surround suppression
+szvec = [0, 4, 8, 16, 32, 64];
+whichprobe = 'C'; 
+probeind = find( strcmp(whichprobe, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+neuoi = neuctxagg{probeind}==1 & RFCIagg.(whichprobe).RFindclassic==1 & RFCIagg.(whichprobe).Pkw_rfclassic<0.05;
+
+figure; hold all
+for ises = 1:Nsessions
+    sesneu = neuoi & sesneuagg{probeind}==ises;
+plot(szvec, mean(sizeCIagg.(whichprobe).Rsizeclassic(sesneu,:),1))
+end
+plot(szvec, mean(sizeCIagg.(whichprobe).Rsizeclassic(neuoi,:),1), 'ko-', 'LineWidth', 2)

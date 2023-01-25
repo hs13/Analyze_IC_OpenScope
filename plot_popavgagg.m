@@ -15,6 +15,7 @@ visind = [6 5 1 2 4 3];
 visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations', ...
     'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
 ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations'};
+szvec = [0, 4, 8, 16, 32, 64];
 
 %%
 neuprobeagg = [];

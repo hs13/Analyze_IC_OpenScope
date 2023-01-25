@@ -186,15 +186,16 @@ fs = 14;
 whichvisarea = 'V1';
 xtl = {'IC1', 'RC1', 'RC2', 'IC2'};
 ytl = {'REt1', 'REt2'};
+Ntt = size(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test,2);
 
 figure;
 annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichvisarea ' test accuacy'], 'edgecolor', 'none', 'fontsize', fs)
 for b = 1:numel(ICblocknames)
     whichICblock = ICblocknames{b};
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
-    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
-    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
-    p = signrank(hrvec - 1/length(traintrialtypes));
+    hrvec = reshape(tempHR, Ntt^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(Ntt)),:), 1);
+    p = signrank(hrvec - 1/Ntt);
     subplot(2,2,b)
     imagesc(mean(tempHR, 3))
     caxis([0 1]); colorbar
@@ -229,9 +230,9 @@ annotation('textbox', [0.1 0.91 0.8 0.1], 'string', [preproc ' SVM ' whichICbloc
 for a = 1:numel(visareas)
     whichvisarea = visareas{a};
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
-    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
-    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1);
-    p = signrank(hrvec - 1/length(traintrialtypes));
+    hrvec = reshape(tempHR, Ntt^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(Ntt)),:), 1);
+    p = signrank(hrvec - 1/Ntt);
     subplot(2,3,a)
     imagesc(nanmean(tempHR, 3))
     caxis([0 1]); colorbar
@@ -261,8 +262,8 @@ for a = 1:numel(visareas)
     whichvisarea = visareas{a};
     subplot(2,3,a)
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).test, 3 ));
-    hrvec = reshape(tempHR, length(traintrialtypes)^2, size(tempHR,3));
-    hrvec = mean(hrvec(find(eye(length(traintrialtypes))),:), 1)';
+    hrvec = reshape(tempHR, Ntt^2, size(tempHR,3));
+    hrvec = mean(hrvec(find(eye(Ntt)),:), 1)';
     tempHR = squeeze(nanmean(HR_SVMtrainICRC.(whichICblock).(whichvisarea).REt, 3 ));
     infscore = squeeze( (( tempHR(1,1,:)-tempHR(1,2,:) )+( tempHR(2,4,:)-tempHR(2,3,:) ))/2 );
     plot(hrvec, infscore, 'o')

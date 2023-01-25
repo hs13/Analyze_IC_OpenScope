@@ -1,4 +1,12 @@
-load(['G:\My Drive\DATA\ICexpts_submission22\openscope_popavg_agg.mat'])
+if exist('/Volumes/GoogleDrive-116160770365018316196/My Drive/', 'dir')
+    drivepath = '/Volumes/GoogleDrive-116160770365018316196/My Drive/';
+elseif exist('G:/My Drive/', 'dir')
+    drivepath = 'G:/My Drive/';
+else
+    error('check drivepath in this computer')
+end
+load([drivepath, 'DATA/ICexpts_submission22/openscope_popavg_agg.mat'])
+
 Nsessions = numel(nwbsessions);
 
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};

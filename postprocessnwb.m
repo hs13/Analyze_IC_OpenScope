@@ -24,7 +24,7 @@ nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
 % sub_1175512783 has two sets of files
 
 %%
-for ises = 10:numel(nwbsessions)
+for ises = 10%:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;
 
@@ -279,7 +279,16 @@ meanFRall = mean(spiketrain,1)/Tres;
 % A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
 % visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 % visind = [6 5 1 2 4 3];
-probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+
+disp('DELETE THIS IN THE NEXT ITERATION AFTER NWB FILES ARE CORRECTED')
+if strcmp(nwbsessions{ises}, 'sub_1183369803')
+    input('for now, manually correcting sub_1183369803')
+    probes = {'A', 'C', 'D', 'E', 'F'};
+save([pathpp, 'probes.mat'], 'probes')
+else
+    probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+end
+
 psthtli = (-500:1000)';
 neucnt = 0;
 for iprobe = 1:numel(probes)

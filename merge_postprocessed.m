@@ -1,3 +1,4 @@
+%% merge postprocessnwb.m and analyzeMouseEye
 addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 addpath(genpath('H:\CODE\helperfunctions'))

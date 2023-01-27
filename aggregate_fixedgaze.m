@@ -171,11 +171,26 @@ for ises = 1:Nsessions
 %         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
 %         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
 
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+
+        if exist([pathpp, 'probes.mat'], 'file')
+            probelist = load([pathpp, 'probes.mat']);
+            warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+        else
+            probelist.probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+        end
+        probeind = find( strcmp(probes{iprobe}, probelist.probes) );
+        %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        
+        
 %         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
 %             error('check neuoind')
 %         end
         neuoind = find(floor(unit_peakch/1000)==probeind-1);
+        
+        if nnz(floor(unit_peakch/1000)==probeind-1)==0
+            fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
+            continue
+        end
         
         % check whether CCF registration is correct
         probelocs = electrode_location(ismember(electrode_id, unit_peakch(neuoind)));
@@ -357,7 +372,16 @@ end
         %     load(sprintf('%svisresponses_probe%s.mat', pathpp, probesR{iprobe}))
         %     % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
         
-        probeind = find( strcmp(probesR{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        
+        if exist([pathpp, 'probes.mat'], 'file')
+            probelist = load([pathpp, 'probes.mat']);
+            warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+        else
+            probelist.probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+        end
+        probeind = find( strcmp(probes{iprobe}, probelist.probes) );
+        %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+
         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
             error('check neuoind')
         end

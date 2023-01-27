@@ -31,8 +31,16 @@ for ises = 1:Nsessions
     revmapelecid(elecid) = 1:numel(elecid);
     
     for iprobe = 1:numel(probes)
-        
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+                
+        if exist([pathpp, 'probes.mat'], 'file')
+            probelist = load([pathpp, 'probes.mat']);
+            warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+        else
+            probelist.probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+        end
+        probeind = find( strcmp(probes{iprobe}, probelist.probes) );
+        %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+
 %         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
 %             error('check neuoind')
 %         end
@@ -186,9 +194,18 @@ for ises = 1:Nsessions
     revmapelecid(elecid) = 1:numel(elecid);
     
     for iprobe = 1:numel(probes)
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        
+        if exist([pathpp, 'probes.mat'], 'file')
+            probelist = load([pathpp, 'probes.mat']);
+            warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+        else
+            probelist.probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+        end
+        probeind = find( strcmp(probes{iprobe}, probelist.probes) );
+        %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        
         if nnz(floor(unit_peakch/1000)==probeind-1)==0
-        fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
+            fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
             continue
         end
 %         tic
@@ -327,9 +344,18 @@ for ises = 1:Nsessions
     
     for iprobe = 1:numel(probesR)
         tic
-        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        
+        if exist([pathpp, 'probes.mat'], 'file')
+            probelist = load([pathpp, 'probes.mat']);
+            warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+        else
+            probelist.probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+        end
+        probeind = find( strcmp(probesR{iprobe}, probelist.probes) );
+        %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+
         if nnz(floor(unit_peakch/1000)==probeind-1)==0
-        fprintf('Probe %s Area %s: NO UNITS!!!\n', probes{iprobe}, visareas{iprobe} )
+        fprintf('Probe %s Area %s: NO UNITS!!!\n', probesR{iprobe}, visareas{iprobe} )
             continue
         end
         

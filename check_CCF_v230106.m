@@ -2,7 +2,7 @@ addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
 addpath(genpath('H:\CODE\Analyze_OpenScope'))
 addpath(genpath('H:\CODE\helperfunctions'))
 
-datadir = 'D:\OpenScopeData\000248\';
+datadir = 'D:\OpenScopeData\000248v230106\';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name};
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
@@ -13,9 +13,9 @@ Nsessions = numel(nwbsessions);
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
 visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 visind = [6 5 1 2 4 3];
+probevisareas = cell(Nsessions,numel(probes));
 
 %% probevisareas
-probevisareas = cell(Nsessions,numel(probes));
 for ises = 1:numel(nwbsessions)
     clearvars -except ises nwbsessions datadir probevisareas probes
     sesclk = tic;
@@ -125,13 +125,9 @@ for ises = 1:numel(nwbsessions)
         probevisareas{ises, iprobe} = sprintf('%s ',unique(neuloc(contains(neuloc, 'VIS'))));
     end
 end
-open probevisareas
+
 
 %% report number of units in each area/session/probe
-Nsessions = numel(nwbsessions);
-% A-AM, B-PM, C-V1, D-LM, E-AL, F-RL
-visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
-
 neulocagg = cell(size(probes));
 sesneuagg = cell(size(probes));
 for ises = 1:Nsessions
@@ -195,3 +191,49 @@ end
 
 areaunitstab = table(v,c,areaunitsperses);
 open areaunitstab
+
+
+%% correct SVM file names (rename them)
+onlyV1SVMs = {'SVM_fixedgaze_trainICRCtestRE', 'SVM_fixedgaze_trainICRCtestRE_subsets_CGIG' ...
+    'SVM_trainICRCtestRE_subsets_CGIG', 'SVM_trainICRCtestRE_subsets_encoder'};
+for f = 1:numel(onlyV1SVMs)
+for ises = 1:Nsessions
+    pathsvm = ['D:\OpenScopeData\000248\postprocessed\SVM\' onlyV1SVMs{f} '\' nwbsessions{ises} '\'];
+    svmfns = dir([pathsvm '*.mat']);
+    % iterate through every file, replace AM with V1
+    for ii = 1:numel(svmfns)
+        svmnewfn = strrep(svmfns(ii).name, 'AM', 'V1');
+        movefile([svmfns(ii).folder filesep svmfns(ii).name], [svmfns(ii).folder filesep svmnewfn])
+    end
+end
+end
+
+%%
+allvisSVMs = {'SVM_trainICRCtestRE', 'SVM_trainRExtestICRC'};
+for f = 1:numel(allvisSVMs)
+for ises = 1:Nsessions
+oldvisareas = {'AM', 'NA', 'V1', 'LM', 'RL', 'RL2'};
+visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+if strcmp(nwbsessions{ises}, 'sub_1183369803')
+oldvisareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+    %visareas = {'AM', 'NA', 'V1', 'LM', 'RL', 'RL2'};
+    visareas = {'AM', 'NA', 'V1', 'LM', 'RL0', 'RL'};
+end
+
+    pathsvm = ['D:\OpenScopeData\000248\postprocessed\SVM\' allvisSVMs{f} '\' nwbsessions{ises} '\'];
+    svmfns = dir([pathsvm, '*.mat']);
+    svmfnsplit = cellfun(@strsplit, {svmfns.name}, repmat({'_'},1,numel(svmfns)), 'uniformoutput', false);
+    svmfnsplit = cat(1,svmfnsplit{:});
+    for a = 1:numel(oldvisareas)
+        if strcmp(oldvisareas{a}, visareas{a})
+            continue
+        end
+        tempsvmfninds = find(any( strcmp(svmfnsplit, oldvisareas{a}), 2));
+        for ifn = 1:numel(tempsvmfninds)
+            ii = tempsvmfninds(ifn);
+            svmnewfn = strrep(svmfns(ii).name, oldvisareas{a}, visareas{a});
+            movefile([svmfns(ii).folder filesep svmfns(ii).name], [svmfns(ii).folder filesep svmnewfn])
+        end
+    end
+end
+end

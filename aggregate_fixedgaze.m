@@ -367,12 +367,6 @@ end
     
     for iprobe = 1:numel(probesR)
         tic
-        load(sprintf('%spostprocessed_probe%s.mat', pathpp, probesR{iprobe}))
-        % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
-        %     load(sprintf('%svisresponses_probe%s.mat', pathpp, probesR{iprobe}))
-        %     % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
-        
-        
         if exist([pathpp, 'probes.mat'], 'file')
             probelist = load([pathpp, 'probes.mat']);
             warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
@@ -381,7 +375,16 @@ end
         end
         probeind = find( strcmp(probes{iprobe}, probelist.probes) );
         %probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        if ~ismember(probesR{iprobe}, probelist.probes)
+            warning('%s: Probe%s does not exist', nwbsessions{ises}, probesR{iprobe})
+            continue
+        end
 
+        load(sprintf('%spostprocessed_probe%s.mat', pathpp, probesR{iprobe}))
+        % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
+        %     load(sprintf('%svisresponses_probe%s.mat', pathpp, probesR{iprobe}))
+        %     % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
+                
         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
             error('check neuoind')
         end

@@ -290,6 +290,10 @@ for ises = 1:Nsessions
     spinlikelyblink = any(likelyblinkpsth(:,trackeyetli>=0 & trackeyetli<endframe), 2);
     
     probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+    if exist([pathpp, 'probes.mat'], 'file')
+        load([pathpp, 'probes.mat'])
+        warning('HS 230126: this was inserted to handle the exception case of sub_1183369803, can delete with the next nwb update')
+    end
     psthtli = (-500:1000)';
     neucnt = 0;
     for iprobe = 1:numel(probes)

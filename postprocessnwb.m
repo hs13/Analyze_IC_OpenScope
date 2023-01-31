@@ -24,7 +24,15 @@ nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
 % sub_1175512783 has two sets of files
 
 %%
-for ises = 1:numel(nwbsessions)
+% ises = 8; % sub_1181314060
+% Requested 16734275x2368 (36.9GB) array exceeds maximum array size preference.
+% Creation of arrays greater than this limit may take a long time and cause
+% MATLAB to become unresponsive.
+% 
+% Error in postprocessnwb (line 93)
+% spiketrain = false(stlen, Nneurons);
+
+for ises = 8%1:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;
 
@@ -90,13 +98,8 @@ end
 
 Tres = 0.001; % 1ms
 stlen = ceil((max(unit_times_data)+1)/Tres); % add 1s buffer/padding after the last spike timing
-spiketrain = false(stlen, Nneurons);
-ststartend = [floor(min(unit_times_data)/Tres)+1 floor(max(unit_times_data)/Tres)+1];
-for ii = 1:Nneurons
-    spiketrain(floor(spiketimes{ii}/Tres)+1, ii) = true;
-end
 
-disp(size(spiketrain))
+disp([stlen, Nneurons])
 
 save([pathpp 'info_units.mat'], 'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur') %'unit_times_data', 
 
@@ -267,8 +270,6 @@ end
 fprintf('longest spontaneous block is %.0fs\n', mv)
 sponTstartind = floor(vis.spontaneous_presentations.start_time(mi)'/Tres)+1;
 sponTendind = floor(vis.spontaneous_presentations.stop_time(mi)'/Tres);
-sponFRall = mean(spiketrain(sponTstartind:sponTendind, :),1)/Tres;
-meanFRall = mean(spiketrain,1)/Tres;
 % figure; hold all
 % plot(sponFR, meanFR, 'k.')
 % xl = xlim; yl = ylim; al = [min([xl yl]) max([xl yl])];
@@ -293,6 +294,14 @@ if numel(neuoind)==0
     continue
 end
 
+probespiketrain = false(stlen, numel(neuoind));
+ststartend = [floor(min(unit_times_data)/Tres)+1 floor(max(unit_times_data)/Tres)+1];
+for ii = 1:numel(neuoind)
+    ci = neuoind(ii);
+    probespiketrain(floor(spiketimes{ci}/Tres)+1, ii) = true;
+end
+
+
 ppfn = sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe});
 if exist(ppfn, 'file')
     load(ppfn)
@@ -306,8 +315,7 @@ else
         psthtrialinds = floor(vis.(visblocks{b}).trialstart'/Tres)+1 + psthtli;
         psth.(visblocks{b}) = false(length(psthtli), vis.(visblocks{b}).numtrials, numel(neuoind));
         for ii = 1:numel(neuoind)
-            ci = neuoind(ii);
-            tempST = spiketrain(:,ci);
+            tempST = probespiketrain(:,ii);
             psth.(visblocks{b})(:,:,ii) = tempST(psthtrialinds);
         end
         clear tempST psthtrialinds
@@ -326,8 +334,8 @@ end
 %     ylabel('Rate (Hz)')
 % end
 
-meanFRvec = meanFRall(neuoind);
-sponFRvec = sponFRall(neuoind);
+sponFRvec = mean(probespiketrain(sponTstartind:sponTendind, :),1)/Tres;
+meanFRvec = mean(probespiketrain,1)/Tres;
 
 % %%
 ICtrialtypes = [0 101 105 106 107 109 110 111 506 511 1105 1109 1201 1299 ...
@@ -380,7 +388,7 @@ save(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}), ...
 
 end
 %%
-if neucnt~=size(spiketrain,2)
+if neucnt~=Nneurons
     error('not all neurons were accounted for')
 end
 

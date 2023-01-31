@@ -191,7 +191,7 @@ end
 fs = 14;
 figure
 for ises = 1:Nsessions
-    subplot(3,4,ises); hold all
+    subplot(3,5,ises); hold all
     histogram(trialmaxdistmodecomagg(ises).ICwcfg1_presentations, 'Normalization', 'cdf')
     yl = ylim;
     plot(10*[1 1], yl, 'r--')
@@ -230,7 +230,7 @@ end
 gazedistthresh = 20;
 figure
 for ises = 1:Nsessions
-    subplot(3,3,ises); hold all
+    subplot(3,5,ises); hold all
     histogram(trialmaxdistmodecomagg(ises).RFCI_presentations, 'binwidth', 3, 'Normalization', 'cdf')
     yl = ylim;
     plot(gazedistthresh*[1 1], yl, 'r--')

@@ -1,7 +1,7 @@
 % uses variables aggregated in aggregate_fixedgaze -- but these are loaded here,
 % so no need to run aggregate_fixedgaze before running this script
 
-load(['G:\My Drive\DATA\ICexpts_submission22\openscope_popavg_fixedgaze_agg.mat'])
+load(['G:\My Drive\DATA\ICexpts_submission22\openscope_popavg_fixedgazeagg.mat'])
 Nsessions = numel(nwbsessions);
 Nrfs = RFCIfieldsize2(strcmp(RFCIfields, 'Rrfclassic'));
 Nszs = sizeCIfieldsize2(strcmp(sizeCIfields, 'Rsizeclassic'));

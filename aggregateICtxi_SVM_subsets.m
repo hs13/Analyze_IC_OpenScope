@@ -31,7 +31,7 @@ for g = 1:numel(subsetgroups)
         else
             pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_fixedgaze_' svmdesc '_subsets_' whichsubsetgroup '_allunits' filesep];
         end
-        svfn = ['HR_SVMsubICRC_' preproc '_' whichICblock '_' whichvisarea '_fixedgaze_agg.mat'];
+        svfn = ['HR_SVMsubICRC_' preproc '_' whichICblock '_' whichvisarea '_fixedgazeagg.mat'];
     else
         if justctx
             pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_subsets_' whichsubsetgroup filesep];

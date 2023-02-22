@@ -78,6 +78,16 @@ if length(dirvec)~=Ndirs
 end
 orivec = vis.sizeCI_presentations.directions(1:Noris);
 szvec = [0, 4, 8, 16, 32, 64];
+
+%%
+load('D:\OpenScopeData\000248v221123\postprocessed\psthavgagg.mat', 'ICblocks', 'ICtrialtypes', 'Ronavgagg')
+for b = 1:numel(visblocks)
+    Ronavgagg.(visblocks{b}).all = [];
+    for iprobe = 1:numel(probes)
+        Ronavgagg.(visblocks{b}).all = cat(2, Ronavgagg.(visblocks{b}).all, Ronavgagg.(visblocks{b}).(probes{iprobe}));
+    end
+end
+
 %% V1: pref-ori distribution of IC/RC encoders
 % RUN AFTER RUNNING FIRST TWO SECTIONS OF aggregate_psth
 whichprobe = 'all';
@@ -500,15 +510,6 @@ xlabel('Pref Ori')
 end
 
 
-
-%%
-load('D:\OpenScopeData\000248v221123\postprocessed\psthavgagg.mat', 'ICblocks', 'ICtrialtypes', 'Ronavgagg')
-for b = 1:numel(visblocks)
-    Ronavgagg.(visblocks{b}).all = [];
-    for iprobe = 1:numel(probes)
-        Ronavgagg.(visblocks{b}).all = cat(2, Ronavgagg.(visblocks{b}).all, Ronavgagg.(visblocks{b}).(probes{iprobe}));
-    end
-end
 
 %% orientation tuning of IC-encoders
 whichprobe = 'all';

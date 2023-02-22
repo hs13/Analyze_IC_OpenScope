@@ -1,4 +1,4 @@
-load(['G:\My Drive\DATA\ICexpts_submission22\openscope_popavg_fixedgaze_agg.mat'])
+load(['G:\My Drive\DATA\ICexpts_submission22\openscope_popavg_fixedgazeagg.mat'])
 Nsessions = numel(nwbsessions);
 
 ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations'};

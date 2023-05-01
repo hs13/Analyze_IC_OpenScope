@@ -21,9 +21,9 @@ visblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentati
     'RFCI_presentations','sizeCI_presentations'}; %,'spontaneous_presentations'};
 ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentations','ICwcfg1_presentations'};
 
-Nrfs = size(RFCIagg.all.Rrfclassic, 2);
-Nszs = size(sizeCIagg.all.Rsizeclassic, 2);
-Ndirs = size(oriparamsagg.all.Rori, 2);
+Nrfs = size(RFCIagg.C.Rrfclassic, 2);
+Nszs = size(sizeCIagg.C.Rsizeclassic, 2);
+Ndirs = size(oriparamsagg.C.Rori, 2);
 Noris = Ndirs/2;
 
 dirvec = vis.sizeCI_presentations.directions;
@@ -38,6 +38,7 @@ kerwinhalf = 25; kersigma = 5;
 kergauss = normpdf( (-kerwinhalf:kerwinhalf)', 0,kersigma);
 kergauss = (kergauss/sum(kergauss));
 
+fs=18;
 %%
 aggneuloc = cat(1,neulocagg{:});
 Nneuronsall = size(aggneuloc, 1);
@@ -143,16 +144,20 @@ end
 
 %% ctrCRF neurons
 
-neudesc = 'ctrCG9';
+neudesc = 'ctrCRF9sigexcl';
 switch neudesc
     case 'ctrCG9'
         neuctr = RFCIagg.all.RFindclassic==1 & RFCIagg.all.pRFclassic<0.05;
+        neuctrdesc = 'center-RF (Mann-Whitney U)';
     case 'ctrCRF9'
         neuctr = RFCIagg.all.RFindclassic==1 & RFCIagg.all.Pkw_rfclassic<0.05;
-    case 'ctrCRF9sigexcl'
+        neuctrdesc = 'center-RF (Kruskal-Wallis)';
+    case 'ctrCRF9sigexcl' % Bonferroni-Holms corrected
         neuctr = RFCIagg.all.RFindclassic==1 & RFCIagg.all.RFsigexclclassic==1;
-    case 'ctrCRF9exclsig'
+        neuctrdesc = 'center-RF (Bonferroni-Holms)';
+    case 'ctrCRF9exclsig' % only one RF has p<0.05
         neuctr = RFCIagg.all.RFindclassic==1 & RFCIagg.all.RFexclsigclassic==1;
+        neuctrdesc = 'exclusive center-RF';
 end
 
 %% preferred IC/REl
@@ -218,6 +223,17 @@ figure; histogram2(prefiwICagg(neuinarea & neuctr), prefiwREtagg(neuinarea & neu
 figure; histogram2(prefiwICRCagg(neuinarea & neuctr), prefiwREtagg(neuinarea & neuctr), 'displaystyle', 'tile', 'showemptybins', 'on')
 colormap(redblue)
 
+neuinarea = neuvisaggall==find(strcmp(vislocs, 'VISp'));
+figure('Position', [100 100 300 240])
+histogram2(prefiwICagg(neuinarea & neuctr), prefiwRElagg(neuinarea & neuctr), 'displaystyle', 'tile', 'showemptybins', 'on')
+colorbar
+colormap redblue
+set(gca,'FontSize', fs, 'YDir', 'reverse', 'XTick', 1:4, 'XTickLabel', 0:45:180-1, 'YTick', 1:4, 'YTickLabel', 0:45:180-1)
+xlabel('Pref. IC Orientation')
+ylabel('Pref. RE_I Orientation')
+% title(sprintf('V1 %s (fixed-gaze, N=%d)', neuctrdesc, nnz(neuinarea & neuctr) ), 'fontweight', 'normal')
+fprintf('V1 %s (N=%d)', neuctrdesc, nnz(neuinarea & neuctr) )
+
 for icol = 0:1
     switch icol
         case 0
@@ -250,21 +266,28 @@ legend(legs)
 set(gca, 'XTick', szvec, 'XGrid', 'on')
 
 %% psth
-ttinds = [506 511; 107 110; 106 111];
-ttcol = [0 0 1; 1 0.5 0; 0 0.7 0];
+% fs=10;
+% % REl, RC, IC
+% ttinds = {[506 511], [107 110], [106 111]};
+% ttcol = [0 0 1; 1 0.5 0; 0 0.7 0];
+% REl, inducers, IC
+ttinds = {[506 511], [1301:1308], [106 111]};
+ttcol = [0 0 1; 0 0 0; 0 0.7 0];
 yl = [2 18];
+yl = [0 30];
 figure
+annotation('textbox', [0.1 0.91 0.9 0.1], 'string', 'all trials', 'edgecolor', 'none')%, 'fontsize', fs)
 hold all
 for ii = 1:numel(probes)
     probeind = find(visind==ii);
 neuoi = neuvisaggall==probeind & neuctr;
 subplot(2,3,ii)
 hold all
-for typi = 1:3
+for typi = 1:numel(ttinds)
     temppsth_ICwcfg1 = [];
     temppsth_ICwcfg0 = [];
     for iprobe = 1:numel(probes)
-        ttoi = ismember(ICtrialtypes, ttinds(typi,:));
+        ttoi = ismember(ICtrialtypes, ttinds{typi});
     temppsth_ICwcfg1 = cat(3, temppsth_ICwcfg1, psthavgagg.ICwcfg1_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
     temppsth_ICwcfg0 = cat(3, temppsth_ICwcfg0, psthavgagg.ICwcfg0_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
     end
@@ -278,6 +301,7 @@ xlim([-100 400])
 if ~isempty(yl)
     ylim(yl)
 end
+% set(gca, 'fontsize', fs)
 xlabel('Time (ms)')
 ylabel('Firing Rate (Hz)')
 title(sprintf('%s center-CRF Neurons N=%d', visareas{probeind}, nnz(neuoi) ))
@@ -285,3 +309,180 @@ end
 
 % isequal( mean(convn(temppsth,kergauss,'same'),2), conv(mean(temppsth,2),kergauss,'same') )
 % max(abs( mean(convn(temppsth,kergauss,'same'),2)-conv(mean(temppsth,2),kergauss,'same') ))
+
+%% psth just V1
+ttinds = {[1301:1304], [506 511], [106 111]};
+ttcol = [0 0 0; 0 0 1; 0 0.7 0];
+ttlabs = {'P1-8', 'I_R_E1-2', 'I1-2'};
+yl = [];
+
+figure('Position', [100 100 300 240])
+hold all
+for ii = 1%:numel(probes)
+    probeind = find(visind==ii);
+neuoi = neuvisaggall==probeind & neuctr;
+hold all
+for typi = 1:numel(ttinds)
+    temppsth_ICwcfg1 = [];
+    temppsth_ICwcfg0 = [];
+    for iprobe = 1:numel(probes)
+        ttoi = ismember(ICtrialtypes, ttinds{typi});
+    temppsth_ICwcfg1 = cat(3, temppsth_ICwcfg1, psthavgagg.ICwcfg1_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
+    temppsth_ICwcfg0 = cat(3, temppsth_ICwcfg0, psthavgagg.ICwcfg0_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
+    end
+    temppsth = squeeze(mean(cat(2,temppsth_ICwcfg1, temppsth_ICwcfg0),2));
+    if size(temppsth,2) ~= nnz(neuoi)
+        error('check temppsth')
+    end
+    shadedErrorBar(psthtli/1000, mean(convn(temppsth,kergauss,'same'),2), std(convn(temppsth,kergauss,'same'),0,2)/sqrt(nnz(neuoi)), {'color', ttcol(typi,:), 'linewidth', 2}, 1 )
+end
+xlim([-100 400]/1000)
+if ~isempty(yl)
+    ylim(yl)
+end
+yl = ylim;
+for typi = 1:numel(ttinds)
+    text(250/1000, yl(2)-(numel(ttinds)-typi)*0.15*range(yl), ttlabs{typi}, 'fontweight', 'bold', 'Color', ttcol(typi,:), 'FontSize', fs, 'VerticalAlignment', 'top')
+end
+ylim(yl)
+set(gca, 'FontSize', fs)
+xlabel('Time (s)')
+ylabel('Firing Rate (Hz)')
+% title(sprintf('%s center-CRF Neurons N=%d', visareas{probeind}, nnz(neuoi) ))
+end
+
+%% stacked psth just V1 individual cells REl vs IC trials
+ttinds = {[106 111], [506 511]};
+ttcol = [0 0.7 0; 0 0 1];
+ttlabs = {'I_C_1_-_2', 'I_R_E_1_-_2'};
+cl = 30*[-1 1];
+
+probeind = find(visind==1);
+neuoi = neuvisaggall==probeind & neuctr;
+temppsth_ICwcfg1 = [];
+temppsth_ICwcfg0 = [];
+for iprobe = 1:numel(probes)
+    temppsth_ICwcfg1 = cat(3, temppsth_ICwcfg1, psthavgagg.ICwcfg1_presentations.(probes{iprobe})(:,ICtrialtypes==0,neuoi(neuprobeagg==iprobe)));
+    temppsth_ICwcfg0 = cat(3, temppsth_ICwcfg0, psthavgagg.ICwcfg0_presentations.(probes{iprobe})(:,ICtrialtypes==0,neuoi(neuprobeagg==iprobe)));
+end
+temppsth = squeeze(mean(cat(2,temppsth_ICwcfg1, temppsth_ICwcfg0),2));
+Rblank = mean(temppsth(psthtli>0 & psthtli<=400,:),1);
+
+plotcb = false;
+figure('Position', [400 400 360 240])
+for typi = 1:2
+    subplot(1,2,typi)
+temppsth_ICwcfg1 = [];
+temppsth_ICwcfg0 = [];
+for iprobe = 1:numel(probes)
+    ttoi = ismember(ICtrialtypes, ttinds{typi});
+    temppsth_ICwcfg1 = cat(3, temppsth_ICwcfg1, psthavgagg.ICwcfg1_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
+    temppsth_ICwcfg0 = cat(3, temppsth_ICwcfg0, psthavgagg.ICwcfg0_presentations.(probes{iprobe})(:,ttoi,neuoi(neuprobeagg==iprobe)));
+end
+temppsth = squeeze(mean(cat(2,temppsth_ICwcfg1, temppsth_ICwcfg0),2));
+
+temppsth = temppsth - Rblank;
+Revoked = mean(temppsth(psthtli>0 & psthtli<=400,:),1);
+if typi ==1
+[sv,si]=sort(Revoked, 'descend');
+end
+
+imagesc(psthtli/1000, 1:nnz(neuoi), convn(temppsth(:,si), kergauss, 'same')')
+set(gca, 'YDir', 'reverse', 'FontSize', fs)
+colormap redblue
+xl = [0 400]/1000;
+xlim(xl)
+caxis(cl)
+xlabel('Time (s)')
+if typi==1
+ylabel('Neurons')
+else
+    set(gca, 'YTickLabel', {})
+end
+if plotcb
+cb = colorbar;
+% cb.Position(1) = 0.75;
+cb.Label.String = '\DeltaFiring Rate (Hz)';
+cb.Label.FontSize = fs;
+cb.Label.Rotation = 270;
+disp(cb.Label.Position)
+cb.Label.Position(1) = 9.5;
+title(sprintf('%s', ttlabs{typi}), 'color', ttcol(typi,:))
+else
+title(sprintf('%s Trials', ttlabs{typi}), 'color', ttcol(typi,:))
+end
+end
+
+%% proportion of IC responsive neurons among ctrRF neurons
+probeind = find(visind==1);
+neuoi = neuvisaggall==probeind & neuctr;
+
+sigBKw = ICsigagg.ICwcfg0_presentations.all.PkwBK(:,1)<0.05 | ICsigagg.ICwcfg1_presentations.all.PkwBK(:,1)<0.05;
+mean(sigBKw(neuoi))
+
+ICresp11 = ICsigagg.ICwcfg1_presentations.all.SP_BK(:,1)>0.5 & ICsigagg.ICwcfg1_presentations.all.Pmww_BK(:,1)<0.05;
+ICresp12 = ICsigagg.ICwcfg1_presentations.all.SP_BK(:,end)>0.5 & ICsigagg.ICwcfg1_presentations.all.Pmww_BK(:,end)<0.05;
+ICresp01 = ICsigagg.ICwcfg0_presentations.all.SP_BK(:,1)>0.5 & ICsigagg.ICwcfg0_presentations.all.Pmww_BK(:,1)<0.05;
+ICresp02 = ICsigagg.ICwcfg0_presentations.all.SP_BK(:,end)>0.5 & ICsigagg.ICwcfg0_presentations.all.Pmww_BK(:,end)<0.05;
+
+ICresp = ICresp11 | ICresp12 | ICresp01 | ICresp02;
+
+SP_BIC = cat(2, ICsigagg.ICwcfg0_presentations.all.SP_BK(:,1), ICsigagg.ICwcfg0_presentations.all.SP_BK(:,end), ...
+    ICsigagg.ICwcfg1_presentations.all.SP_BK(:,1), ICsigagg.ICwcfg1_presentations.all.SP_BK(:,end));
+Pmww_BIC = cat(2, ICsigagg.ICwcfg0_presentations.all.Pmww_BK(:,1), ICsigagg.ICwcfg0_presentations.all.Pmww_BK(:,end), ...
+    ICsigagg.ICwcfg1_presentations.all.Pmww_BK(:,1), ICsigagg.ICwcfg1_presentations.all.Pmww_BK(:,end));
+[pmat, si] = sort(Pmww_BIC, 2);
+reordind = sub2ind(size(pmat), repmat((1:size(pmat,1))',1,size(pmat,2)), si);
+if ~isequaln(Pmww_BIC(reordind), pmat)
+    error('check reordind')
+end
+ICrespbonfholms = any(SP_BIC(reordind)>0.5 & pmat.*[4:-1:1]<0.1, 2); % one-tail
+ICrespbonfholms2 = any(SP_BIC(reordind)>0.5 & pmat.*[4:-1:1]<0.05, 2); % two-tailed
+
+disp([mean(ICresp(neuoi)) mean(ICrespbonfholms(neuoi)) mean(ICrespbonfholms2(neuoi))])
+fprintf('%.4f is the proportion of IC responsive neurons among ctrRF neurons\n', mean(ICresp(neuoi)))
+% 0.7917
+
+M = ICsigagg.ICkcfg1_presentations.all.sigmcBICREl2;
+[Mu,ia,ic] = unique(M, 'rows', 'stable'); % Unique Values By Row, Retaining Original Order
+h = accumarray(ic, 1); % Count Occurrences
+% maph = h(ic); % Map Occurrences To ‘ic’ Values
+disp([Mu, h])
+
+sigmcBICRElw = cat(2, ICsigagg.ICwcfg0_presentations.all.sigmcBICREl2, ...
+    ICsigagg.ICwcfg1_presentations.all.sigmcBICREl2, ...
+    ICsigagg.ICwcfg0_presentations.all.sigmcBICREl1, ...
+    ICsigagg.ICwcfg1_presentations.all.sigmcBICREl1);
+mean(any(sigmcBICRElw(neuoi, 1:2:end)==1, 2))
+
+fprintf('%.4f vs %.4f is the proportion of IC vs REl responsive neurons among %s neurons\n', ...
+    mean(any(sigmcBICRElw(neuoi, 1:2:end)==1, 2)), mean(any(sigmcBICRElw(neuoi, 2:2:end)==1, 2)), neudesc )
+
+%% 2d-histogram preferred IC vs REl: IC-responsive center-RF neurons
+neuinarea = neuvisaggall==find(strcmp(vislocs, 'VISp'));
+neuoi = neuinarea & neuctr & any(sigmcBICRElw(:, 1:2:end)==1, 2);% & any(sigmcBICRElw(:, 2:2:end)==1, 2);
+
+figure('Position', [100 100 300 240])
+histogram2(prefiwICagg(neuoi), ori4paramsagg.all.prefiori4(neuoi), 'displaystyle', 'tile', 'showemptybins', 'on')
+colorbar
+colormap redblue
+set(gca,'FontSize', fs, 'XGrid', 'off', 'YGrid', 'off', 'YDir', 'reverse', 'XTick', 1:4, 'XTickLabel', 0:45:180-1, 'YTick', 1:4, 'YTickLabel', 0:45:180-1)
+xlabel('Pref. I_C Orientation')
+ylabel('Pref. Grating Orientation')
+% title(sprintf('V1 %s (fixed-gaze, N=%d)', neuctrdesc, nnz(neuinarea & neuctr) ), 'fontweight', 'normal')
+fprintf('V1 IC-responsive %s (N=%d/%d)\n', neuctrdesc, nnz(neuoi), nnz(neuinarea & neuctr) )
+
+
+figure('Position', [400 100 300 240])
+histogram2(prefiwICagg(neuoi), prefiwRElagg(neuoi), 'displaystyle', 'tile', 'showemptybins', 'on')
+cb = colorbar;
+cb.Label.String = '# Neurons';
+cb.Label.Rotation = 270;
+cb.Label.FontSize = fs;
+cb.Label.Position(1) = 3.8;
+colormap redblue
+set(gca,'FontSize', fs, 'XGrid', 'off', 'YGrid', 'off', 'YDir', 'reverse', 'XTick', 1:4, 'XTickLabel', 0:45:180-1, 'YTick', 1:4, 'YTickLabel', 0:45:180-1)
+xlabel('Pref. I_C Orientation','FontSize', fs)
+ylabel('Pref. I_R_E Orientation','FontSize', fs)
+% title(sprintf('V1 %s (fixed-gaze, N=%d)', neuctrdesc, nnz(neuinarea & neuctr) ), 'fontweight', 'normal')
+fprintf('V1 IC-responsive %s (N=%d)\n', neuctrdesc, nnz(neuoi) )

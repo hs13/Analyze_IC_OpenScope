@@ -2,26 +2,79 @@
 % instead of aggregating SVMtrainICRCagg, compute HR_SVMtrainICRC while loading SVMtrainICRC
 
 %%
-datadir = 'D:\OpenScopeData\000248\';
+% datadir = 'D:\OpenScopeData\000248\';
+datadir = '/Users/hyeyoung/Documents/OpenScopeData/000248/';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 Nsessions = numel(nwbsessions);
 
+%% probevisareas (taken from check_CCF.m)
+probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+
+probevisareas = cell(Nsessions,numel(probes));
+for ises = 1:numel(nwbsessions)
+    clearvars -except ises nwbsessions Nsessions datadir probevisareas probes
+    sesclk = tic;
+    
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+    if ~exist(pathpp, 'dir')
+        mkdir(pathpp)
+    end
+    
+    load([pathpp 'info_electrodes.mat'])
+    load([pathpp 'info_units.mat'])
+%     %% probevisareas
+    
+    elecid = electrode_id+1;
+    revmapelecid = NaN(max(elecid),1);
+    revmapelecid(elecid) = 1:numel(elecid);
+    
+    for iprobe = 1:numel(probes)
+        %         tic
+        %         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))
+        %         % 'neuoind', 'vis', 'Tres', 'psthtli', 'psth'
+%         load(sprintf('%svisresponses_probe%s.mat', pathpp, probes{iprobe}))
+        % 'meanFRvec', 'sponFRvec', 'ICtrialtypes', 'ICsig', 'RFCI', 'sizeCI', 'oriparams'
+        
+        probeind = find( strcmp(probes{iprobe}, {'A', 'B', 'C', 'D', 'E', 'F'}) );
+        %         if ~isequal(unique(floor(unit_peakch(neuoind)/1000)), probeind-1)
+        %             error('check neuoind')
+        %         end
+        neuoind = find(floor(unit_peakch/1000)==probeind-1);
+        
+        % check whether CCF registration is correct
+        probelocs = electrode_location(ismember(electrode_id, unit_peakch(neuoind)));
+        
+        neuloc = electrode_location(revmapelecid(unit_peakch(neuoind)+1));
+        if ~isequal(unique(probelocs), unique(neuloc))
+            disp(unique(neuloc)')
+            error('check neuloc')
+        end
+        %         disp(probes{iprobe})
+        %         disp(unique(neuloc(contains(neuloc, 'VIS')))')
+        probevisareas{ises, iprobe} = sprintf('%s ',unique(neuloc(contains(neuloc, 'VIS'))));
+    end
+end
+open probevisareas
+
+%%
 svmdesc = 'trainICRCtestRE';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
 
 justctx = true;
 if justctx
-    visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+    % visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
+    visareas = {'Actx', 'Bctx', 'Cctx', 'Dctx', 'Ectx', 'Fctx'};
     pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep];
 else
     visareas = {'A', 'B', 'C', 'D', 'E', 'F'};
     probelabels = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
     pathsv = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc '_allunits' filesep];
 end
+% pathsv = '/Volumes/GoogleDrive-116160770365018316196/My Drive/DATA/ICexpts_postprocessed_OpenScope/SVM_trainICRCtestRE/';
 ICblocknames = {'ICkcfg0', 'ICkcfg1', 'ICwcfg0', 'ICwcfg1'};
 
 % visareas = {'VISp'};
@@ -45,6 +98,7 @@ for a = 1:numel(visareas)
     for b = 1:numel(ICblocknames)
         whichICblock = ICblocknames{b};
         HR_SVMtrainICRC.(whichICblock).(whichvisarea) = struct();
+        HR_SVMtrainICRC.(whichICblock).(whichvisarea).Nneurons = zeros(Nsessions,1);
         HR_SVMtrainICRC.(whichICblock).(whichvisarea).train = NaN(Ntt,Ntt,Nsplits,Nsessions);
         HR_SVMtrainICRC.(whichICblock).(whichvisarea).test = NaN(Ntt,Ntt,Nsplits,Nsessions);
         HR_SVMtrainICRC.(whichICblock).(whichvisarea).probe = NaN(Nprobett,Ntt,Nsplits,Nsessions);
@@ -72,6 +126,7 @@ for a = 1:numel(visareas)
                 continue
             end
             load(svmfn, 'SVMtrainICRC')
+        HR_SVMtrainICRC.(whichICblock).(whichvisarea).Nneurons(ises) = SVMtrainICRC.Nneurons;
             %SVMtrainICRCagg(ises).(whichICblock).(whichvisarea) = SVMtrainICRC;
             for lm = 1:numel(lmf)
                 for isplit = 1:Nsplits
@@ -149,9 +204,32 @@ for a = 1:numel(visareas)
 end % a
 toc
 
-save([pathsv 'HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
-save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
+save([pathsv 'HR_SVMtrainICRC_' preproc '_agg.mat'], 'probevisareas', 'HR_SVMtrainICRC', '-v7.3')
+% save(['G:\My Drive\DATA\ICexpts_submission22\openscope_HR_SVMtrainICRC_' preproc '_agg.mat'], 'HR_SVMtrainICRC', '-v7.3')
+save(['/Users/hyeyoung/Documents/DATA/ICexpts_submission22/openscope_HR_SVMtrainICRC_' preproc '_agg.mat'], 'probevisareas', 'HR_SVMtrainICRC', '-v7.3')
 
+%% takes too long...
+%{
+for a = 1:numel(visareas)
+    whichvisarea = visareas{a};
+    disp(whichvisarea)
+    for b = 1:numel(ICblocknames)
+        whichICblock = ICblocknames{b};
+        disp(whichICblock)
+        HR_SVMtrainICRC.(whichICblock).(whichvisarea).Nneurons = zeros(Nsessions,1);
+        for ises = 1:Nsessions
+            pathsvm = [pathsv nwbsessions{ises} filesep];
+            svmfn = strcat(pathsvm, 'SVM_', svmdesc, '_', whichvisarea, '_', whichSVMkernel, '_', preproc, '_silencesubsets_', whichICblock, '.mat');
+            if ~exist(svmfn, 'file')
+                disp([svmfn ' does not exist'])
+                continue
+            end
+            load(svmfn, 'SVMtrainICRC')
+            HR_SVMtrainICRC.(whichICblock).(whichvisarea).Nneurons(ises) = SVMtrainICRC.Nneurons;
+        end
+    end
+end
+%}
 %% adjusted performance metrics
 if ~exist('dprime_SVMtrainICRC', 'var')
     dprime_SVMtrainICRC = struct();

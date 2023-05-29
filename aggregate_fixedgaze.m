@@ -1,5 +1,5 @@
 addpath(genpath('/Users/hyeyoung/Documents/CODE/helperfunctions'))
-addpath(genpath('/Users/hyeyoung/Documents/CODE/Analyze_OpenScope'))
+addpath('/Users/hyeyoung/Documents/CODE/Analyze_OpenScope')
 
 datadir = '/Users/hyeyoung/Documents/OpenScopeData/000248/';
 nwbdir = dir(datadir);
@@ -22,6 +22,40 @@ ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentatio
 % kerwinhalf = 2; kersigma = 1;
 % kergauss = normpdf( (-kerwinhalf:kerwinhalf)', 0,kersigma);
 % kergauss = (kergauss/sum(kergauss));
+
+%% print genotype
+addpath(genpath('/Users/hyeyoung/Documents/OpenScopeData/matnwb_HSLabDesktop'))
+cd('/Users/hyeyoung/Documents/OpenScopeData/')
+genotypes = cell(size(nwbsessions));
+tic
+for ises = 1:numel(nwbsessions)
+nwbfiles = cat(1, dir([datadir nwbsessions{ises} '/*.nwb']), dir([datadir nwbsessions{ises} '/*/*.nwb']));
+
+% take filename  with shortest length or filename that does not contain probe
+[~, fileind] = min(cellfun(@length, {nwbfiles.name}));
+nwbspikefile = fullfile([nwbfiles(fileind).folder filesep nwbfiles(fileind).name]);
+
+nwb = nwbRead(nwbspikefile);
+
+genotypes{ises} = nwb.general_subject.genotype;
+disp(nwb.general_subject.genotype)
+end
+toc
+
+% Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
+% Sst-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt
 
 %% aggregate visresponses: ICsig, RFCI, RFCIspin, sizeCI, oriparams
 ises=14;

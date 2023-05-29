@@ -144,7 +144,9 @@ end
 % % 0.05*2*sqrt(nanmean(pupiltracking.area)/pi) correspond to ~3 pixels
 % % pupil diameter is roughly 70 pixels, eye diameter is roughly 270 pixels
 % % nanmedian(eyetracking.width) is ~155 pixels.
-% % this corresponds to mouse's gaze range, whcih is ~160 degrees
+% width is defined as horizontal halfaxis of the ellipse fit of the pupil. 
+% see https://brainmapportal-live-4cc80a57cd6e400d854-f7fdcae.divio-media.net/filer_public/4e/be/4ebe2911-bd38-4230-86c8-01a86cfd758e/visual_behavior_2p_technical_whitepaper.pdf
+% % this corresponds to mouse's gaze range, which is ~160 degrees
 % % diameter of the mouse eye is eyewidth/cosd((180-gazerange)/2), i.e., ~160 pixels
 % % circumference of eye = eyediameter*pi (~160*pi = ~500 pixels)
 % % corresponds to 180 degrees

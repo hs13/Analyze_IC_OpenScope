@@ -32,14 +32,14 @@ nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
 % Error in postprocessnwb (line 93)
 % spiketrain = false(stlen, Nneurons);
 
-for ises = 8%1:numel(nwbsessions)
+for ises = 1:numel(nwbsessions)
 clearvars -except ises nwbsessions datadir
 sesclk = tic;
 
 % pathpp = 'D:\OpenScopeData\000248\sub-Placeholder\';
 % nwb = nwbRead('D:\OpenScopeData\000248\sub-Placeholder\sub-Placeholder.nwb');
 
-nwbfiles = cat(1, dir([datadir nwbsessions{ises} '\*.nwb']), dir([datadir nwbsessions{ises} '\*\*.nwb']));
+nwbfiles = cat(1, dir([datadir nwbsessions{ises} filesep '*.nwb']), dir([datadir nwbsessions{ises} filesep '*' filesep '*.nwb']));
 
 % take filename  with shortest length or filename that does not contain probe
 [~, fileind] = min(cellfun(@length, {nwbfiles.name}));
@@ -281,7 +281,7 @@ sponTendind = floor(vis.spontaneous_presentations.stop_time(mi)'/Tres);
 % visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 % visind = [6 5 1 2 4 3];
 
-    probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+probes = {'A', 'B', 'C', 'D', 'E', 'F'};
     
 psthtli = (-500:1000)';
 neucnt = 0;

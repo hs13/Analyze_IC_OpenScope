@@ -1,7 +1,7 @@
 addpath(genpath('/Users/hyeyoung/Documents/CODE/helperfunctions'))
 addpath('/Users/hyeyoung/Documents/CODE/Analyze_OpenScope')
 
-datadir = '/Users/hyeyoung/Documents/OpenScopeData/000248/';
+datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
@@ -24,8 +24,8 @@ ICblocks = {'ICkcfg0_presentations','ICkcfg1_presentations','ICwcfg0_presentatio
 % kergauss = (kergauss/sum(kergauss));
 
 %% print genotype
-addpath(genpath('/Users/hyeyoung/Documents/OpenScopeData/matnwb_HSLabDesktop'))
-cd('/Users/hyeyoung/Documents/OpenScopeData/')
+addpath(genpath('/Users/hyeyoung/Documents/DATA/OpenScopeData/matnwb_HSLabDesktop'))
+cd('/Users/hyeyoung/Documents/DATA/OpenScopeData/')
 genotypes = cell(size(nwbsessions));
 tic
 for ises = 1:numel(nwbsessions)
@@ -513,7 +513,7 @@ end
 end
 
 if aggpsth
-    save([datadir 'postprocessed\psthavg_fixedgazeagg.mat'], 'probes', 'visareas', 'visind', 'nwbsessions', ...
+    save([datadir 'postprocessed\openscope_psthavg_fixedgazeagg.mat'], 'probes', 'visareas', 'visind', 'nwbsessions', ...
     	'probeneurons_fixedgazeagg', 'neuloc_fixedgazeagg', 'neupeakch_fixedgazeagg', 'sesneu_fixedgazeagg', 'neuctx_fixedgazeagg', 'sesneuctx_fixedgazeagg', ...
         'vistrialtypes_fixedgazeagg', 'vistrialrep_fixedgazeagg', 'vistrialorder_fixedgazeagg', 'vistrial_fixedgazeagg', ...
         'ICblocks', 'ICtrialtypes', 'psthtli', 'psthavg_fixedgazeagg', 'Ronavg_fixedgazeagg', 'Roffavg_fixedgazeagg', '-v7.3')

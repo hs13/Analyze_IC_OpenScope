@@ -307,6 +307,7 @@ for ises = 1:Nsessions
         if exist( vrfgfn, 'file')
             fprintf('%s exists, skipping...\n', vrfgfn)
             continue
+            %load(vrfgfn)
         end
         
         load(sprintf('%spostprocessed_probe%s.mat', pathpp, probes{iprobe}))

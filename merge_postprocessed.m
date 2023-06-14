@@ -1,9 +1,9 @@
 %% merge vis variables e.g., ICsigall
-addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
-addpath(genpath('H:\CODE\Analyze_OpenScope'))
-addpath(genpath('H:\CODE\helperfunctions'))
+% addpath(genpath('C:\Users\Hyeyoung\Documents\matnwb'))
+% addpath(genpath('H:\CODE\Analyze_OpenScope'))
+% addpath(genpath('H:\CODE\helperfunctions'))
 
-datadir = 'D:\OpenScopeData\000248\';
+datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name};
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
@@ -314,6 +314,9 @@ for ises = 1:Nsessions
             error('some of the neurons seem to already have been accounted for, check')
         end
         neucheck(neuoind)=true;
+        
+        meanFRall(neuoind) = meanFRvec;
+        sponFRall(neuoind) = sponFRvec;
         
         for b = 1:numel(visblocks)
             if ismember(visblocks{b}, ICblocks)

@@ -11,9 +11,28 @@ ses2anal(4) = [];
 
 ccgpath = '/Volumes/GoogleDrive-116160770365018316196/My Drive/DATA/ICexpts_postprocessed_OpenScope/CCG/';
 
+%{
+for ises = ses2anal
+    fprintf('%d/%d %s\n', ises, Nsessions, nwbsessions{ises})
+    clearvars -except ises ses2anal Nsessions nwbsessions ccgpath
+% pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+pathccg = [ccgpath nwbsessions{ises} filesep];
+load([pathccg 'ctxCCG.mat'])
+load([pathccg 'ctxCCGsm.mat'])
+ctxCCGsm = double(ctxCCGsm);
+ctxCCGjc = ctxCCG - ctxCCGsm;
+
+tic
+[excpeak, inhtrough] = computeCCGxconn(CCGtli, ctxCCGjc, 10);
+toc
+save([pathccg 'ctxCCGjcxconn.mat'], 'excpeak', 'inhtrough')
+end
+%}
+%%
 % 'neuctrctx', 'neulocctrctx', 'visarealabels', 'CCGtli', 'ctrctxCCG', 'ctrctxCCGweight'
 neuctxagg = [];
 neulocctxagg = [];
+Nneurons_visarea = NaN(Nsessions,6);
 visarealabelagg = [];
 sesctxagg = [];
 ctxCCGweightagg = cell(Nsessions,1);
@@ -35,6 +54,8 @@ for ises = ses2anal
 % pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 pathccg = [ccgpath nwbsessions{ises} filesep];
 load([pathccg 'ctxCCG.mat'])
+[v,c]=uniquecnt(visarealabels);
+Nneurons_visarea(ises,ismember(1:6, v)) = c(ismember(v,1:6));
 neuctxagg = cat(1, neuctxagg, neuctx);
 neulocctxagg = cat(1, neulocctxagg, neulocctx);
 visarealabelagg = cat(1, visarealabelagg, visarealabels);
@@ -52,21 +73,62 @@ ctxCCGjcinagg{ises} = ctxCCGjcin;
 ctxCCGjcoutagg{ises} = ctxCCGjcout;
 ctxCCGsmt0agg{ises} = squeeze(ctxCCGsm(:,:,CCGtli==0));
 
-posttli = CCGtli(CCGtli>0);
-[mv,mi]= max(ctxCCGjc(:,:,CCGtli>0), [],3);
-ctxCCGjcpostpkagg{ises} = mv;
-ctxCCGjcpostTpkagg{ises} = posttli(mi);
+% posttli = CCGtli(CCGtli>=0 & CCGtli<=10);
+% [postmv,postmi]= max(ctxCCGjc(:,:,CCGtli>=0 & CCGtli<=10), [],3);
+% postmv(posttli(postmi)==0)=NaN;
+% ctxCCGjcpostpkagg{ises} = postmv;
+% ctxCCGjcpostTpkagg{ises} = posttli(postmi);
+% 
+% pretli = CCGtli(CCGtli<=0 & CCGtli>=-10);
+% [premv,premi]= max(ctxCCGjc(:,:,CCGtli<=0 & CCGtli>=-10), [],3);
+% premv(pretli(premi)==0)=NaN;
+% ctxCCGjcprepkagg{ises} = premv;
+% ctxCCGjcpreTpkagg{ises} = pretli(premi);
 
-pretli = CCGtli(CCGtli<0);
-[mv,mi]= max(ctxCCGjc(:,:,CCGtli<0), [],3);
-ctxCCGjcprepkagg{ises} = mv;
-ctxCCGjcpreTpkagg{ises} = pretli(mi);
+load([pathccg 'ctxCCGjcxconn.mat'])
+ctxCCGjcpostpkagg{ises} = squeeze(excpeak(:,:,1));
+ctxCCGjcpostTpkagg{ises} = squeeze(excpeak(:,:,2));
+
+ctxCCGjcprepkagg{ises} = squeeze(excpeak(:,:,1))';
+ctxCCGjcpreTpkagg{ises} = squeeze(excpeak(:,:,2))';
 
 load([pathccg 'ctxCCGsm0.mat']) % good match with squeeze(ctxCCGsm(:,:,CCGtli==0))
 ctxCCGsm0agg{ises} = ctxCCGsm0;
 
 toc
 end
+
+%%
+nanmean(Nneurons_visarea(:,1))
+nanmean(sum(Nneurons_visarea(:,2:6),2))
+
+%% sanity check
+%{
+mean(postmv==excpk, 'all')
+%nnz(isnan(postmv) & ~isnan(excpk))
+
+posttli = CCGtli(CCGtli>0 & CCGtli<=10);
+[postmv,postmi]= max(ctxCCGjc(:,:,CCGtli>0 & CCGtli<=10), [],3);
+
+pretli = CCGtli(CCGtli<0 & CCGtli>=-10);
+[premv,premi]= max(ctxCCGjc(:,:,CCGtli<0 & CCGtli>=-10), [],3);
+
+temppost = postmv;
+temppost(eye(size(temppost))==1)= NaN;
+temppre = premv;
+temppre(eye(size(temppre))==1)= NaN;
+
+isequaln(temppost, temppre')
+
+mv = max(abs((temppost-temppre')./temppost),[],'all');
+[r,c]=find(abs((temppost-temppre')./temppost)==mv);
+
+figure; hold all
+plot(CCGtli, squeeze(ctxCCGjc(c,r,:)), 'k-')
+plot(CCGtli, flip(squeeze(ctxCCGjc(r,c,:))), 'r--')
+plot(posttli(postmi(c,r)), postmv(c,r), 'ko')
+plot(pretli(premi(c,r)), premv(c,r), 'ro')
+%}
 
 %% aggregate visresponses: ICsig, RFCI, RFCIspin, sizeCI, oriparams
 ises=14;
@@ -363,50 +425,6 @@ xlabel('Firing Rate')
 ylabel('Input from HVA')
 
 %%
-ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder==1;
-indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin2==1 ...
-    | ICsigallagg.ICwcfg1_presentations.indin3==1 | ICsigallagg.ICwcfg1_presentations.indin4==1;
-% ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
-% indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
-
-neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
-neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
-% neuctrl = neuctx2incl & visarealabelagg==1;
-
-tempCData = [0 0.7 0; 0.42 0 0.42];
-figure('Position', [100 100 300 240]);
-hold all
-for n = 2:-1:1
-errorbar(xsm0thr, Pin_avg.HVA.(V1neugroups{n}), Pin_sem.HVA.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
-end
-xlim([0 8])
-legend({'IC-enc.', 'Seg.'})
-legend('boxoff')
-set(gca, 'FontSize', fs)
-xlabel('Factor of Jitter Mean', 'FontSize', fs)
-ylabel('Input from HVA', 'FontSize', fs)
-
-tempP = Pin.HVA;
-tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
-tempgroup = [ones(nnz(neuoi),1); 0.5+ones(nnz(neuctrl),1)];
-
-figure; 
-a = boxchart(tempP(neuoi,:));
-hold on
-b = boxchart(tempP(neuctrl,:));
-
-% figure; 
-% boxchart( reshape(repmat(xsm0thr,length(tempgroup),1),[],1), reshape(tempPin,[],1), 'GroupByColor', reshape(repmat(tempgroup,1,length(xsm0thr)),[],1));
-
-figure; 
-b = boxchart( reshape(repmat(1:length(xsm0thr),length(tempgroup),1),[],1), reshape(tempPcat,[],1), 'GroupByColor', reshape(repmat(tempgroup,1,length(xsm0thr)),[],1));
-b(1).BoxFaceColor = [0 0.7 0];
-b(1).MarkerColor = [0 0.7 0];
-b(2).BoxFaceColor = [0.42 0 0.42];
-b(2).MarkerColor = [0.42 0 0.42];
-set(gca, 'XTick', 1:length(xsm0thr), 'XTickLabel', xsm0thr)
-
-%%
 fs = 18;
 
 ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder==1;
@@ -443,6 +461,52 @@ for a = 1:numel(areas)
 end
 end
 
+%%
+ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder==1;
+indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin2==1 ...
+    | ICsigallagg.ICwcfg1_presentations.indin3==1 | ICsigallagg.ICwcfg1_presentations.indin4==1;
+% ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
+% indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
+
+neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
+neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
+% neuctrl = neuctx2incl & visarealabelagg==1;
+V1neugroups = {'ICenc', 'indin'};
+
+tempCData = [0 0.7 0; 0.42 0 0.42];
+figure('Position', [100 100 300 240]);
+hold all
+for n = 2:-1:1
+errorbar(xsm0thr, Pin_avg.HVA.(V1neugroups{n}), Pin_sem.HVA.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
+end
+xlim([0 8])
+legend({'IC-enc.', 'Seg.'})
+legend('boxoff')
+set(gca, 'FontSize', fs)
+xlabel('Factor of Jitter Mean', 'FontSize', fs)
+ylabel('Input from HVA', 'FontSize', fs)
+
+tempP = Pin.HVA;
+tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
+tempgroup = [ones(nnz(neuoi),1); 0.5+ones(nnz(neuctrl),1)];
+
+figure; 
+a = boxchart(tempP(neuoi,:));
+hold on
+b = boxchart(tempP(neuctrl,:));
+
+% figure; 
+% boxchart( reshape(repmat(xsm0thr,length(tempgroup),1),[],1), reshape(tempPin,[],1), 'GroupByColor', reshape(repmat(tempgroup,1,length(xsm0thr)),[],1));
+
+figure; 
+b = boxchart( reshape(repmat(1:length(xsm0thr),length(tempgroup),1),[],1), reshape(tempPcat,[],1), 'GroupByColor', reshape(repmat(tempgroup,1,length(xsm0thr)),[],1));
+b(1).BoxFaceColor = [0 0.7 0];
+b(1).MarkerColor = [0 0.7 0];
+b(2).BoxFaceColor = [0.42 0 0.42];
+b(2).MarkerColor = [0.42 0 0.42];
+set(gca, 'XTick', 1:length(xsm0thr), 'XTickLabel', xsm0thr)
+
+%%
 yl = [0 1];
 xtl = {'IC-enc.', 'Seg. Resp.'};
 
@@ -459,7 +523,7 @@ xlim([0 8])
 % legend({'IC-enc.', 'Seg.'})
 % legend('boxoff')
 set(gca, 'FontSize', fs)
-xlabel('Factor of Jitter Mean', 'FontSize', fs)
+xlabel('Threshold', 'FontSize', fs)
 ylabel('Input from HVA', 'FontSize', fs)
 
 tempCData = [0 0.7 0; 0.42 0 0.42];
@@ -475,9 +539,10 @@ xlim([0 8])
 % legend({'IC-enc.', 'Seg.'})
 % legend('boxoff')
 set(gca, 'FontSize', fs)
-xlabel('Factor of Jitter Mean', 'FontSize', fs)
-ylabel('Output within V1', 'FontSize', fs)
+xlabel('Threshold', 'FontSize', fs)
+ylabel('Output in V1', 'FontSize', fs)
 
+%{
 tempCData = [0 0.7 0; 0.42 0 0.42];
 figure('Position', [100 100 270 240]);
 hold all
@@ -488,8 +553,9 @@ xlim([0 8])
 legend({'IC-enc.', 'Seg.'})
 legend('boxoff')
 set(gca, 'FontSize', fs)
-xlabel('Factor of Jitter Mean', 'FontSize', fs)
+xlabel('Threshold', 'FontSize', fs)
 ylabel('Input from HVA', 'FontSize', fs)
+%}
 
 %% bar plot 
 fs = 18;
@@ -503,7 +569,7 @@ indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presen
 neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
 neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
 
-for ifg = 1:5
+for ifg = [1 3]
 switch ifg
     case 1
 tempP = Pin.HVA(:,xsm0thr==2);
@@ -513,15 +579,15 @@ tempP = Pin.LM(:,xsm0thr==2);
 ylab = 'Input from LM';
     case 3
 tempP = Pout.V1(:,xsm0thr==2);
-ylab = 'Output within V1';
+ylab = 'Output in V1';
     case 4
 tempP = Pin.V1(:,xsm0thr==2);
-ylab = 'Input within V1';
+ylab = 'Input in V1';
     case 5
 tempP = Pin.V1(:,xsm0thr==2);
 ylab = 'Output to LM';
 end
-
+yl = [0 0.55];
 tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
 tempgroup = [ones(nnz(neuoi),1); 2*ones(nnz(neuctrl),1)];
 
@@ -535,7 +601,7 @@ b = boxchart(tempgroup(tempgroup==ii), tempPcat(tempgroup==ii), 'notch' , 'on', 
 b.BoxFaceColor = tempCData(ii,:);
 b.MarkerColor = 0.15+tempCData(ii,:);
 end
-yl = ylim;
+% yl = ylim;
 p=ranksum(tempP(neuoi,:), tempP(neuctrl,:));
 if p<0.05
     scatter(1.5, yl(2), 50, 'k*', 'LineWidth', 1)

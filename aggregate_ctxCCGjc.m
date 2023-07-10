@@ -9,7 +9,7 @@ Nsessions = numel(nwbsessions);
 ses2anal = 1:Nsessions;
 ses2anal(4) = [];
 
-ccgpath = '/Volumes/GoogleDrive-116160770365018316196/My Drive/DATA/ICexpts_postprocessed_OpenScope/CCG/';
+ccgpath = '/Users/hyeyoung/Library/CloudStorage/GoogleDrive-hyeyoung_shin@berkeley.edu/My Drive/DATA/ICexpts_postprocessed_OpenScope/CCG/';
 
 %{
 for ises = ses2anal
@@ -98,9 +98,12 @@ ctxCCGsm0agg{ises} = ctxCCGsm0;
 toc
 end
 
-%%
-nanmean(Nneurons_visarea(:,1))
-nanmean(sum(Nneurons_visarea(:,2:6),2))
+%% report number of neurons
+fprintf('V1 neurons mean %.4f sem %.4f\n', nanmean(Nneurons_visarea(:,1)), ...
+    nanstd(Nneurons_visarea(:,1))/sqrt(size(Nneurons_visarea,1)) )
+
+fprintf('HVA neurons mean %.4f sem %.4f\n', nanmean(sum(Nneurons_visarea(:,2:6),2)), ...
+nanstd(sum(Nneurons_visarea(:,2:6),2))/sqrt(size(Nneurons_visarea,1)) )
 
 %% sanity check
 %{

@@ -33,7 +33,7 @@ for ises = Nsessions
     pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
     load([pathpp 'postprocessed_probeC.mat'], 'vis')
     
-    pathsv = [datadir 'CCGfft' filesep nwbsessions{ises} filesep];
+    pathsv = [datadir 'CCG' filesep nwbsessions{ises} filesep];
     if ~exist(pathsv, 'dir')
         mkdir(pathsv)
     end

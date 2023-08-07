@@ -3,7 +3,9 @@
 % addpath(genpath('H:\CODE\Analyze_OpenScope'))
 % addpath(genpath('H:\CODE\helperfunctions'))
 
-datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
+% datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
+datadir = 'S:\OpenScopeData\000248\';
+
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name};
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...

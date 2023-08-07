@@ -62,41 +62,49 @@ conditions = {
     }
 %}
 
-addpath(genpath(pwd))
 
+if ismac
+    addpath(genpath('/Users/hyeyoung/Documents/CODE/Analyze_OpenScope/matnwb'))
+    addpath('/Users/hyeyoung/Documents/CODE/helperfunctions')
+    datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
+elseif ispc
+    rmpath(genpath('C:\Users\USER\GitHub\Analyze_IC_OpenScope\matnwb'))
+    addpath(genpath('S:\OpenScopeData\matnwb_HSLabDesktop'))
+    addpath('C:\Users\USER\GitHub\helperfunctions')
+    datadir = 'S:\OpenScopeData\000248\';
+end
 
-datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
 nwbdir = dir(datadir);
-nwbsessions = {nwbdir.name}; 
+nwbsessions = {nwbdir.name};
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
     ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 
 for ises = 1:numel(nwbsessions)
-clearvars -except ises nwbsessions datadir
-sesclk = tic;
+    clearvars -except ises nwbsessions datadir
+    sesclk = tic;
 
-% pathpp = 'D:\OpenScopeData\000248\sub-Placeholder\';
-% nwb = nwbRead('D:\OpenScopeData\000248\sub-Placeholder\sub-Placeholder.nwb');
+    % pathpp = 'D:\OpenScopeData\000248\sub-Placeholder\';
+    % nwb = nwbRead('D:\OpenScopeData\000248\sub-Placeholder\sub-Placeholder.nwb');
 
-nwbfiles = cat(1, dir([datadir nwbsessions{ises} filesep '*.nwb']), dir([datadir nwbsessions{ises} filesep '*' filesep '*.nwb']));
+    nwbfiles = cat(1, dir([datadir nwbsessions{ises} filesep '*.nwb']), dir([datadir nwbsessions{ises} filesep '*' filesep '*.nwb']));
 
-% take filename  with shortest length or filename that does not contain probe
-[~, fileind] = min(cellfun(@length, {nwbfiles.name}));
-nwbspikefile = fullfile([nwbfiles(fileind).folder filesep nwbfiles(fileind).name]);
-% nwbspikefile = string(nwbspikefile);
-disp(nwbspikefile)
-nwb = nwbRead(nwbspikefile); %, 'ignorecache');
+    % take filename  with shortest length or filename that does not contain probe
+    [~, fileind] = min(cellfun(@length, {nwbfiles.name}));
+    nwbspikefile = fullfile([nwbfiles(fileind).folder filesep nwbfiles(fileind).name]);
+    % nwbspikefile = string(nwbspikefile);
+    %disp(nwbspikefile)
+    nwb = nwbRead(nwbspikefile); %, 'ignorecache');
 
-pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 
-%ot = nwb.processing.get('optotagging').nwbdatainterface.get('optotagging').data.load();
+    %ot = nwb.processing.get('optotagging').nwbdatainterface.get('optotagging').data.load();
 
-optocond = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('condition').data.load();
-optostim = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('stimulus_name').data.load();
-optodur = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('duration').data.load();
-optolevel = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('level').data.load();
+    optocond = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('condition').data.load();
+    optostim = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('stimulus_name').data.load();
+    optodur = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('duration').data.load();
+    optolevel = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').vectordata.get('level').data.load();
 
-%{
+    %{
 o = cellstr([optostim num2str(optodur)]);
 v = unique(o);
 c = zeros(size(v));
@@ -104,136 +112,142 @@ for ii = 1:numel(v)
 c(ii) = nnz(strcmp(o,v(ii)));
 fprintf('%s %d\n', v{ii},c(ii))
 end
-%}
+    %}
 
-%unique(cellstr(horzcat(optocond, optostim)))
-opto = struct();
-opto.optocond = cellstr(optocond);
-opto.optostim = cellstr(optostim);
-opto.optodur = optodur;
-opto.optolevel = optolevel;
+    %unique(cellstr(horzcat(optocond, optostim)))
+    opto = struct();
+    opto.genotype = nwb.general_subject.genotype;
+    opto.optocond = cellstr(optocond);
+    opto.optostim = cellstr(optostim);
+    opto.optodur = optodur;
+    opto.optolevel = optolevel;
 
-% conditionlist= {'2 ms pulses at 1 Hz', 'a single 10ms pulse', ...
-%     '1 second of 5Hz pulse train. Each pulse is 2 ms wide', ...
-%     'half-period of a cosine wave', 'Each pulse is 10 ms wide', ...
-%     'Each pulse is 6 ms wide', ...
-%     '1 second of 40 Hz pulse train. Each pulse is 2 ms wide', ...
-%     'a single square pulse', 'a single square pulse', ...
-%     'half-period of a cosine wave', ...
-%     '1 second of 100 Hz pulse train. Each pulse is 2 ms wide', ...
-%     '1 second square pulse: continuously on for 1s'          };
-opto.stimlist = {'fast_pulses', 'pulse', 'pulse', 'raised_cosine', ...
-    '5 hz pulse train', '40 hz pulse train', 'fast_pulses', 'pulse', ...
-    'pulse', 'raised_cosine', '100 hz pulse train', 'Square Pulse'};
-opto.durationlist = [1; 1; 0.2; 0.1; 0.05; 0.033; 0.025; 0.02; 0.0167; .0125; 0.01; 1.0];
+    % conditionlist= {'2 ms pulses at 1 Hz', 'a single 10ms pulse', ...
+    %     '1 second of 5Hz pulse train. Each pulse is 2 ms wide', ...
+    %     'half-period of a cosine wave', 'Each pulse is 10 ms wide', ...
+    %     'Each pulse is 6 ms wide', ...
+    %     '1 second of 40 Hz pulse train. Each pulse is 2 ms wide', ...
+    %     'a single square pulse', 'a single square pulse', ...
+    %     'half-period of a cosine wave', ...
+    %     '1 second of 100 Hz pulse train. Each pulse is 2 ms wide', ...
+    %     '1 second square pulse: continuously on for 1s'          };
+    opto.stimlist = {'fast_pulses', 'pulse', 'pulse', 'raised_cosine', ...
+        '5 hz pulse train', '40 hz pulse train', 'fast_pulses', 'pulse', ...
+        'pulse', 'raised_cosine', '100 hz pulse train', 'Square Pulse'};
+    opto.durationlist = [1; 1; 0.2; 0.1; 0.05; 0.033; 0.025; 0.02; 0.0167; .0125; 0.01; 1.0];
 
-opto.optotrials = zeros(size(opto.optocond));
-for typi = 1:length(stimlist)
-    trialsoi = strcmp(opto.optostim, opto.stimlist{typi}) & round(opto.optodur*10^4)==round(opto.durationlist(typi)*10^4) ;
-    opto.optotrials(trialsoi) = typi;
-end
-[v,c]=uniquecnt(opto.optotrials);
-disp([v,c])
+    opto.optotrials = zeros(size(opto.optocond));
+    for typi = 1:length(opto.stimlist)
+        trialsoi = strcmp(opto.optostim, opto.stimlist{typi}) & round(opto.optodur*10^4)==round(opto.durationlist(typi)*10^4) ;
+        opto.optotrials(trialsoi) = typi;
+    end
+    [v,c]=uniquecnt(opto.optotrials);
+    %disp([v,c])
 
-opto.optostarttime = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').start_time.data.load();
-opto.optostoptime = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').stop_time.data.load();
+    opto.optostarttime = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').start_time.data.load();
+    opto.optostoptime = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').stop_time.data.load();
 
-% % below is the order according to my opto script
-% condition_list = [0,1,2,3,4,5,6,7,8,9,10,11];
-% waveforms_list = {'1Hz', '5Hz', '10Hz', '20Hz', '30Hz', '40Hz', ...
-%     '50Hz', '60Hz', '80Hz', '100Hz', 'square1s', 'cosine'};
+    % % below is the order according to my opto script
+    % condition_list = [0,1,2,3,4,5,6,7,8,9,10,11];
+    % waveforms = [data_1Hz_10ms, data_1Hz, data_5Hz, data_10Hz, data_20Hz, data_30Hz, data_40Hz, data_50Hz, data_60Hz, data_80Hz, data_square1s, data_cosine];
 
-% % presumed order
-opto.presumedcond = {'square1s', '1Hz', '5Hz', '10Hz', '20Hz', '30Hz', '40Hz', ...
-    '50Hz', '60Hz', '80Hz', '100Hz', 'cosine'}; % presumably...
+    % % presumed order
+    % opto.presumedcond = {'square1s', '1Hz', '5Hz', '10Hz', '20Hz', '30Hz', '40Hz', ...
+    %     '50Hz', '60Hz', '80Hz', '100Hz', 'cosine'}; % presumably...
 
-% optotimeseries = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').timeseries.data.load();
-%%
-unit_ids = nwb.units.id.data.load(); % array of unit ids represented within this session
-unit_peakch = nwb.units.vectordata.get('peak_channel_id').data.load();
-unit_times_data = nwb.units.spike_times.data.load();
-unit_times_idx = nwb.units.spike_times_index.data.load();
-% unit_waveform = nwb.units.waveform_mean.data.load();
-% unit_wfdur = nwb.units.vectordata.get('waveform_duration').data.load();
+    opto.actualcond = {'1Hz_10ms', '1Hz_2ms', '5Hz_2ms', '10Hz_2ms', '20Hz_2ms', ...
+        '30Hz_2ms', '40Hz_2ms', '50Hz_2ms', '60Hz_2ms', '80Hz_2ms', 'square1s', 'cosine'};
+    fprintf('%s %s\n', nwbsessions{ises}, opto.genotype)
 
-Nneurons = length(unit_ids);
+    % optotimeseries = nwb.processing.get('optotagging').dynamictable.get('optogenetic_stimulation').timeseries.data.load();
+    %%
+    unit_ids = nwb.units.id.data.load(); % array of unit ids represented within this session
+    unit_peakch = nwb.units.vectordata.get('peak_channel_id').data.load();
+    unit_times_data = nwb.units.spike_times.data.load();
+    unit_times_idx = nwb.units.spike_times_index.data.load();
+    % unit_waveform = nwb.units.waveform_mean.data.load();
+    % unit_wfdur = nwb.units.vectordata.get('waveform_duration').data.load();
 
-% all(ismember(unit_peakch, electrode_id))
+    Nneurons = length(unit_ids);
 
-spiketimes = cell(Nneurons, 1);
-last_idx = 0;
-for ii = 1:Nneurons
-    unit_id = unit_ids(ii);
-    
-%     assert(unit_trials_idx(i) == unit_times_idx(i), 'Expected unit boundaries to match between trials & spike_times jagged arrays')
-    start_idx = last_idx + 1;
-    end_idx = unit_times_idx(ii);
-    
-    spiketimes{ii} = unit_times_data(start_idx:end_idx);
-    
-    last_idx = end_idx;
-end
+    % all(ismember(unit_peakch, electrode_id))
 
-Tres = 0.001; % 1ms
-stlen = ceil((max(unit_times_data)+1)/Tres); % add 1s buffer/padding after the last spike timing
+    spiketimes = cell(Nneurons, 1);
+    last_idx = 0;
+    for ii = 1:Nneurons
+        unit_id = unit_ids(ii);
 
-%%
-probes = {'A', 'B', 'C', 'D', 'E', 'F'};
-optopsthtli = (-500:1500)';
-neucnt = 0;
-for iprobe = 1:numel(probes)
-neuoind = find(floor(unit_peakch/1000)==iprobe-1);
-neucnt = neucnt + numel(neuoind);
-fprintf('Probe %s: %d\n', probes{iprobe}, numel(neuoind) )
+        %     assert(unit_trials_idx(i) == unit_times_idx(i), 'Expected unit boundaries to match between trials & spike_times jagged arrays')
+        start_idx = last_idx + 1;
+        end_idx = unit_times_idx(ii);
 
-if numel(neuoind)==0
-    continue
-end
+        spiketimes{ii} = unit_times_data(start_idx:end_idx);
 
-probespiketrain = false(stlen, numel(neuoind));
-ststartend = [floor(min(unit_times_data)/Tres)+1 floor(max(unit_times_data)/Tres)+1];
-for ii = 1:numel(neuoind)
-    ci = neuoind(ii);
-    probespiketrain(floor(spiketimes{ci}/Tres)+1, ii) = true;
-end
+        last_idx = end_idx;
+    end
 
+    Tres = 0.001; % 1ms
+    stlen = ceil((max(unit_times_data)+1)/Tres); % add 1s buffer/padding after the last spike timing
 
-ppfn = sprintf('%spsth_opto_probe%s.mat', pathpp, probes{iprobe});
-if exist(ppfn, 'file')
-    load(ppfn)
-    continue
-end
+    %%
+    probes = {'A', 'B', 'C', 'D', 'E', 'F'};
+    optopsthtli = (-500:1500)';
+    neucnt = 0;
+    for iprobe = 1:numel(probes)
+        neuoind = find(floor(unit_peakch/1000)==iprobe-1);
+        neucnt = neucnt + numel(neuoind);
+        fprintf('Probe %s: %d\n', probes{iprobe}, numel(neuoind) )
+
+        if numel(neuoind)==0
+            continue
+        end
+
+        probespiketrain = false(stlen, numel(neuoind));
+        ststartend = [floor(min(unit_times_data)/Tres)+1 floor(max(unit_times_data)/Tres)+1];
+        for ii = 1:numel(neuoind)
+            ci = neuoind(ii);
+            probespiketrain(floor(spiketimes{ci}/Tres)+1, ii) = true;
+        end
 
 
-tic
-psthtrialinds = floor(opto.optostarttime'/Tres)+1 + optopsthtli;
-optopsth = false(length(optopsthtli), length(opto.optostarttime), numel(neuoind));
-for ii = 1:numel(neuoind)
-    tempST = probespiketrain(:,ii);
-    optopsth(:,:,ii) = tempST(psthtrialinds);
-end
-clear tempST psthtrialinds
-toc % takes 6 min for 2500 units
+        ppfn = sprintf('%spsth_opto_probe%s.mat', pathpp, probes{iprobe});
+        % if exist(ppfn, 'file')
+        %     load(ppfn)
+        %     continue
+        % end
 
 
-salttrials = opto.optotrials~=find(strcmp(opto.presumedcond, 'cosine'));
-saltbasetli = [-floor(0.5/Tres):-1]';
-salttesttli = [0:floor(0.009/Tres)]';
-probeunits_saltp = NaN(size(neuoind));
-probeunits_saltI = NaN(size(neuoind));
-for ii = 1:numel(neuoind)
-    spt_baseline = squeeze(optopsth(ismember(optopsthtli, saltbasetli), salttrials, ii))';
-    spt_test = squeeze(optopsth(ismember(optopsthtli, salttesttli), salttrials, ii))';
-    [p I] = salt(spt_baseline,spt_test,Tres);
-    probeunits_saltp(ii) = p;
-    probeunits_saltI(ii) = I;
-end
-% appropriate alpha for salt tests: 0.01
+        % tic
+        psthtrialinds = floor(opto.optostarttime'/Tres)+1 + optopsthtli;
+        optopsth = false(length(optopsthtli), length(opto.optostarttime), numel(neuoind));
+        for ii = 1:numel(neuoind)
+            tempST = probespiketrain(:,ii);
+            optopsth(:,:,ii) = tempST(psthtrialinds);
+        end
+        clear tempST psthtrialinds
+        % toc % takes ~5sec per probe
 
-save(ppfn, 'neuoind', 'opto', 'Tres', 'optopsthtli', 'optopsth', ...
-    'salttrials', 'saltbasetli', 'salttesttli', 'probeunits_saltp', 'probeunits_saltI', '-v7.3')
 
-%{
+        salttrials = opto.optotrials~=find(strcmp(opto.actualcond, 'cosine'));
+        saltbasetli = [-floor(0.5/Tres):-1]';
+        salttesttli = [0:floor(0.009/Tres)]';
+        probeunits_saltp = NaN(size(neuoind));
+        probeunits_saltI = NaN(size(neuoind));
+        for ii = 1:numel(neuoind)
+            spt_baseline = squeeze(optopsth(ismember(optopsthtli, saltbasetli), salttrials, ii))';
+            spt_test = squeeze(optopsth(ismember(optopsthtli, salttesttli), salttrials, ii))';
+            [p I] = salt(spt_baseline,spt_test,Tres);
+            probeunits_saltp(ii) = p;
+            probeunits_saltI(ii) = I;
+        end
+        % appropriate alpha for salt tests: 0.01
+
+        save(ppfn, 'neuoind', 'opto', 'Tres', 'optopsthtli', 'optopsth', ...
+            'salttrials', 'saltbasetli', 'salttesttli', 'probeunits_saltp', 'probeunits_saltI', '-v7.3')
+
+    fprintf('%.2f%% (%d/%d)\n', 100*mean(probeunits_saltp<0.01), nnz(probeunits_saltp<0.01), length(probeunits_saltp))
+
+        %{
 % % psth averaged across all units, for each opto condition
 % relabreord = [opto.relabel(:)', {' '}];
 % figure;
@@ -247,7 +261,7 @@ for typi = 1:12
         figure
     end
     subplot(2,2,mod(typi-1,4)+1)
-    plot(psthtli(smhalfwin+1:end-smhalfwin), 1000*squeeze(mean(temppsth, [2 3])))
+    plot(optopsthtli(smhalfwin+1:end-smhalfwin), 1000*squeeze(mean(temppsth, [2 3])))
     xlabel('Time (ms)')
     ylabel('Rate (Hz)')
     title(tempcond)
@@ -265,7 +279,7 @@ smker = (kergauss/sum(kergauss));
 temppsth = convn(optopsth(:, opto.optotrials==typi, :), smker, 'same');
 cm = gray(nnz(opto.optotrials==typi)); cm(:,2) = 0; cm(:,3) = 0;
 figure
-p = plot(psthtli, 1000*squeeze(mean( temppsth, 3)));%, 'Color', cm)
+p = plot(optopsthtli, 1000*squeeze(mean( temppsth, 3)));%, 'Color', cm)
 for ii = 1:numel(p)
 set(p(ii), 'Color', cm(ii,:))
 end
@@ -280,7 +294,7 @@ temppsth = convn(optopsth(:, opto.optotrials==typi, :), smker, 'same');
 cm = gray(nnz(opto.optotrials==typi)); cm(:,2) = 0; cm(:,3) = 0;
 tempsalt = (probeunits_saltp<0.01);
 figure
-p = plot(psthtli, 1000*squeeze(mean( temppsth(:,:,tempsalt), 3)));%, 'Color', cm)
+p = plot(optopsthtli, 1000*squeeze(mean( temppsth(:,:,tempsalt), 3)));%, 'Color', cm)
 for ii = 1:numel(p)
 set(p(ii), 'Color', cm(ii,:))
 end
@@ -301,9 +315,64 @@ optopsthavg = squeeze(mean(optopsth(:,salttrials,si), 2));
 figure; imagesc(squeeze(optopsthavg)')
 colormap(flipud(gray))
 caxis([0 0.1])
-%}
+        %}
+
+    end
+
 
 end
 
+%% plot each session
+datadir = 'S:\OpenScopeData\000248\';
+nwbdir = dir(datadir);
+nwbsessions = {nwbdir.name};
+nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...
+    ( contains(nwbsessions, 'sub-') | contains(nwbsessions, 'sub_') ));
 
+figure
+for ises = 1:numel(nwbsessions)
+    clearvars('neuoind', 'opto', 'Tres', 'optopsthtli', 'optopsth', ...
+        'salttrials', 'saltbasetli', 'salttesttli', 'probeunits_saltp', 'probeunits_saltI')
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+    ppfn = [pathpp 'psth_opto_probeC.mat'];
+    load(ppfn)
+
+    %opto.genotype = nwb.general_subject.genotype;
+    % opto.actualcond = {'1Hz_10ms', '1Hz_2ms', '5Hz_2ms', '10Hz_2ms', '20Hz_2ms', ...
+    %     '30Hz_2ms', '40Hz_2ms', '50Hz_2ms', '60Hz_2ms', '80Hz_2ms', 'square1s', 'cosine'};
+    % opto = rmfield(opto, 'presumedcond');
+
+    disp(opto.genotype)
+    fprintf('%.2f%% (%d/%d)\n', 100*mean(probeunits_saltp<0.01), nnz(probeunits_saltp<0.01), length(probeunits_saltp))
+
+    for typi = 1:12
+        subplot(12,numel(nwbsessions),(typi-1)*numel(nwbsessions)+ises)
+        smhalfwin = 0; smwin = smhalfwin*2+1;
+        temppsth = convn(optopsth(:, opto.optotrials==typi, :), ones(smwin,1)/smwin, 'valid');
+        tempcond = opto.actualcond{typi};
+
+        plot(optopsthtli(smhalfwin+1:end-smhalfwin), 1000*squeeze(mean(temppsth, [2 3])))
+        if typi==12
+        xlabel('Time (ms)')
+        end
+        if ises==1
+        ylabel('Rate (Hz)')
+        end
+        if typi==1
+        title({nwbsessions{ises}, tempcond}, 'interpreter', 'none', 'FontSize', 7, 'FontWeight','normal')
+        else
+        title(tempcond, 'interpreter', 'none', 'FontSize', 7, 'FontWeight','normal')
+        end
+        xlim([-250 1250])
+        optohz = strsplit(tempcond, 'Hz');
+        optohz = str2double(optohz{1});
+        xt = [1000/optohz * (0:optohz)];
+        if isnan(optohz)
+            xt = [0 1000];
+        end
+        xtl = cell(size(xt));
+        xtl{1} = 0;
+        xtl{end} = 1;
+        set(gca, 'FontSize', 7, 'Xtick', xt, 'XTickLabel', xtl, 'XTickLabelRotation', 0, 'Xgrid', 'on')
+    end
 end

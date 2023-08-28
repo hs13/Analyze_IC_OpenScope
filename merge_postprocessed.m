@@ -415,3 +415,25 @@ for ises = 1:Nsessions
     end
     toc
 end
+
+
+%%
+for ises = 1:Nsessions
+    clearvars -except ises Nsessions nwbsessions datadir
+    fprintf('%d/%d %s\n', ises, Nsessions, nwbsessions{ises})
+    tic
+    
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+
+    load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
+    load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
+    elecid = electrode_id+1;
+    revmapelecid = NaN(max(elecid),1);
+    revmapelecid(elecid) = 1:numel(elecid);
+    neuallloc = electrode_location(revmapelecid(unit_peakch+1));
+
+    load(sprintf('%spostprocessed.mat', pathpp))
+    save(sprintf('%spostprocessed.mat', pathpp), 'vis', 'Tres', 'Rall', 'neuallloc', '-v7.3')
+    
+    toc
+end

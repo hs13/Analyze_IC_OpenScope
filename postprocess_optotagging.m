@@ -376,3 +376,116 @@ for ises = 1:numel(nwbsessions)
         set(gca, 'FontSize', 7, 'Xtick', xt, 'XTickLabel', xtl, 'XTickLabelRotation', 0, 'Xgrid', 'on')
     end
 end
+
+%% added 230829: RESUME EDITING
+% Siegle et al's single unit filter criteria
+% isi_violations < 0.5 & amplitude_cutoff < 0.1 & presence_ratio > 0.9
+% https://allensdk.readthedocs.io/en/latest/_static/examples/nb/visual_behavior_neuropixels_quality_metrics.html1
+
+
+% ISI violations: This metric searches for refractory period violations that indicate a unit contains spikes from multiple neurons. 
+% The ISI violations metric represents the relative firing rate of contaminating spikes. 
+% It is calculated by counting the number of violations of less than 1.5 ms, 
+% dividing by the amount of time for potential violations surrounding each spike, 
+% and normalizing by the overall spike rate. It is always positive (or 0), but has no upper bound. See ref. 72 for more details.
+% Amplitude cutoff: This metric provides an approximation of a unit%s false negative rate. 
+% First, a histogram of spike amplitudes is created, and the height of the histogram at the minimum amplitude is extracted. 
+% The percentage of spikes above the equivalent amplitude on the opposite side of the histogram peak is then calculated. 
+% If the minimum amplitude is equivalent to the histogram peak, the amplitude cutoff is set to 0.5 
+% (indicating a high likelihood that more than 50% of spikes are missing). 
+% This metric assumes a symmetrical distribution of amplitudes and no drift, so it will not necessarily reflect the true false negative rate.
+% Presence ratio: The session was divided into 100 equal-sized blocks; the presence ratio is defined as the fraction of blocks that include one or more spikes from a particular unit. Units with a low presence ratio are likely to have drifted out of the recording, or could not be tracked by Kilosort2 for the duration of the experiment.
+
+
+addpath(genpath('S:\OpenScopeData\matnwb_HSLabDesktop'))
+nwbsessions = {'sub_1171903433','sub_1172968426','sub_1172969394','sub_1174569641', ...
+    'sub_1175512783','sub_1176214862','sub_1177693342','sub_1181314060', ...
+    'sub_1181585608','sub_1182593231','sub_1183369803','sub_1186544726', ...
+    'sub_1189891322','sub_1194090570'};
+
+for ises = 1:numel(nwbsessions)
+    clearvars -except nwbsessions ises
+    mousedate = nwbsessions{ises};
+    datadir = 'S:/OpenScopeData/000248/';
+    pathpp = strcat('S:/OpenScopeData/000248/postprocessed/', mousedate, '/');
+    disp(mousedate)
+
+    nwbfiles = cat(1, dir([datadir nwbsessions{ises} filesep '*.nwb']), dir([datadir nwbsessions{ises} filesep '*' filesep '*.nwb']));
+    % take filename  with shortest length or filename that does not contain probe
+    [~, fileind] = min(cellfun(@length, {nwbfiles.name}));
+    nwbspikefile = fullfile([nwbfiles(fileind).folder filesep nwbfiles(fileind).name]);
+    nwb = nwbRead(nwbspikefile);
+
+    % load([pathpp 'info_electrodes.mat']) %'electrode_probeid', 'electrode_localid', 'electrode_id', 'electrode_location', '-v7.3')
+    % load([pathpp 'info_units.mat']) %'unit_ids', 'unit_peakch', 'unit_times_idx', 'unit_wfdur'
+    % elecid = electrode_id+1;
+    % revmapelecid = NaN(max(elecid),1);
+    % revmapelecid(elecid) = 1:numel(elecid);
+    % neuallloc = electrode_location(revmapelecid(unit_peakch+1));
+
+    unit_ids = nwb.units.id.data.load(); % array of unit ids represented within this session
+    unit_peakch = nwb.units.vectordata.get('peak_channel_id').data.load();
+    % unit_waveform = nwb.units.waveform_mean.data.load();
+    unit_wfdur = nwb.units.vectordata.get('waveform_duration').data.load();
+    unit_isi_violations = nwb.units.vectordata.get('isi_violations').data.load();
+    unit_amplitude = nwb.units.vectordata.get('amplitude').data.load();
+    unit_amplitude_cutoff = nwb.units.vectordata.get('amplitude_cutoff').data.load();
+    unit_presence_ratio = nwb.units.vectordata.get('presence_ratio').data.load();
+
+    save([pathpp 'qc_units.mat'], 'unit_wfdur', 'unit_isi_violations', 'unit_amplitude', 'unit_amplitude_cutoff', 'unit_presence_ratio') %'unit_times_data',
+
+    figure('Position', [100 100 1200 400])
+    subplot(1,3,1)
+    hold all
+    histogram(log10(unit_isi_violations+0.00001))
+    yl = ylim;
+    plot(log10([0.5 0.5]), yl, 'r--')
+    title(sprintf('isi_violations<0.5 : %.0f%%', 100*mean(unit_isi_violations<0.5)), 'interpreter', 'none')
+    subplot(1,3,2)
+    hold all
+    histogram(unit_amplitude_cutoff, 'NumBins', 20)
+    yl = ylim;
+    plot([0.5 0.5], yl, 'r--')
+    title(sprintf('amplitude_cutoff<0.1 : %.0f%%', 100*mean(unit_amplitude_cutoff<0.1)), 'interpreter', 'none')
+    subplot(1,3,3)
+    hold all
+    histogram(unit_presence_ratio)
+    yl = ylim;
+    plot([0.9 0.9], yl, 'r--')
+    title(sprintf('presence_ratio>0.9 : %.0f%%', 100*mean(unit_presence_ratio>0.9)), 'interpreter', 'none')
+
+    disp('unit_isi_violations<0.5 & unit_amplitude_cutoff<0.1 & unit_presence_ratio>0.9')
+    disp(mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.1 & unit_presence_ratio>0.9)) % criteria in Siegle
+    disp('unit_isi_violations<0.5 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9')
+    disp(mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)) % relax amplitude_cutoff
+    disp('mean(unit_isi_violations<1 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)')
+    disp(mean(unit_isi_violations<1 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)) % relax amplitude_cutoff and isi_violoations
+
+end
+
+isi5amp1pres9 = zeros(numel(nwbsessions),1);
+isi5amp5pres9 = zeros(numel(nwbsessions),1);
+isi1amp5pres9 = zeros(numel(nwbsessions),1);
+isi5pres9 = zeros(numel(nwbsessions),1);
+for ises = 1:numel(nwbsessions)
+    mousedate = nwbsessions{ises};
+    pathpp = strcat('S:/OpenScopeData/000248/postprocessed/', mousedate, '/');
+
+    load([pathpp 'qc_units.mat'], 'unit_wfdur', 'unit_isi_violations', 'unit_amplitude', 'unit_amplitude_cutoff', 'unit_presence_ratio') %'unit_times_data',
+    isi5amp1pres9(ises) = mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.1 & unit_presence_ratio>0.9);
+    isi5amp5pres9(ises) = mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9);
+    isi1amp5pres9(ises) = mean(unit_isi_violations<1 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9);
+    isi5pres9(ises) = mean(unit_isi_violations<0.5 & unit_presence_ratio>0.9);
+
+    % disp(mousedate)
+    % disp('unit_isi_violations<0.5 & unit_amplitude_cutoff<0.1 & unit_presence_ratio>0.9')
+    % disp(mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.1 & unit_presence_ratio>0.9)) % criteria in Siegle
+    % disp('unit_isi_violations<0.5 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9')
+    % disp(mean(unit_isi_violations<0.5 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)) % relax amplitude_cutoff
+    % disp('mean(unit_isi_violations<1 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)')
+    % disp(mean(unit_isi_violations<1 & unit_amplitude_cutoff<0.5 & unit_presence_ratio>0.9)) % relax amplitude_cutoff and isi_violoations
+end
+
+figure; hold all
+plot(1:4, [isi5amp1pres9 isi5amp5pres9 isi1amp5pres9 isi5pres9], 'o-')
+errorbar(1:4, mean([isi5amp1pres9 isi5amp5pres9 isi1amp5pres9 isi5pres9],1), std([isi5amp1pres9 isi5amp5pres9 isi1amp5pres9 isi5pres9],0,1)/sqrt(numel(nwbsessions)), 'ko-', 'MarkerFaceColor', 'k', 'LineWidth', 2)

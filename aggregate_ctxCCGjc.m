@@ -1,4 +1,4 @@
-addpath(genpath('/Users/hyeyoung/Documents/CODE/helperfunctions'))
+addpath(genpath('C:\Users\USER\GitHub\helperfunctions'))
 
 % FOUND SESSION 4 (sub_1174569641) TO BE AN EXACT DUPLICATE OF SESSION 1 (sub_1171903433)!!!!!!
 nwbsessions = {'sub_1171903433','sub_1172968426','sub_1172969394', 'sub_1174569641', ...
@@ -9,7 +9,8 @@ Nsessions = numel(nwbsessions);
 ses2anal = 1:Nsessions;
 ses2anal(4) = [];
 
-ccgpath = '/Users/hyeyoung/Library/CloudStorage/GoogleDrive-hyeyoung_shin@berkeley.edu/My Drive/DATA/ICexpts_postprocessed_OpenScope/CCG/';
+% ccgpath = '/Users/hyeyoung/Library/CloudStorage/GoogleDrive-hyeyoung_shin@berkeley.edu/My Drive/DATA/ICexpts_postprocessed_OpenScope/CCG/';
+ccgpath = 'S:\OpenScopeData\000248\CCG\'
 
 %{
 for ises = ses2anal
@@ -135,7 +136,7 @@ plot(pretli(premi(c,r)), premv(c,r), 'ro')
 
 %% aggregate visresponses: ICsig, RFCI, RFCIspin, sizeCI, oriparams
 ises=14;
-datadir = '/Users/hyeyoung/Documents/DATA/OpenScopeData/000248/';
+datadir = 'S:\OpenScopeData\000248\';
 pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
 load(sprintf('%svisresponses_probeC.mat', pathpp))
 load(sprintf('%spostprocessed_probeC.mat', pathpp), 'neuoind')
@@ -423,14 +424,25 @@ end
 
 %% firing rate confound...
 figure
+subplot(2,2,1)
 plot(meanFRallagg(neuctxagg==1), Pin.HVA(:,xsm0thr==2), '.')
 xlabel('Firing Rate')
 ylabel('Input from HVA')
 
-figure
+subplot(2,2,2)
 plot(meanFRallagg(neuctxagg==1), Pin.V1(:,xsm0thr==2), '.')
 xlabel('Firing Rate')
+ylabel('Input from V1')
+
+subplot(2,2,3)
+histogram2(meanFRallagg(neuctxagg==1), Pin.HVA(:,xsm0thr==2), 'DisplayStyle', 'tile')
+xlabel('Firing Rate')
 ylabel('Input from HVA')
+
+subplot(2,2,4)
+histogram2(meanFRallagg(neuctxagg==1), Pin.V1(:,xsm0thr==2), 'DisplayStyle', 'tile')
+xlabel('Firing Rate')
+ylabel('Input from V1')
 
 %%
 fs = 18;

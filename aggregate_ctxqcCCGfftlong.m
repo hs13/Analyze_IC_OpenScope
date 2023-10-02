@@ -280,38 +280,55 @@ for ises = ses2anal
     
 end
 
+unit_amplitude_agg = [];
+unit_amplitude_cutoff_agg = [];
+unit_isi_violations_agg = [];    
+unit_presence_ratio_agg = [];
+unit_wfdur_agg = [];
+for ises = ses2anal
+    fprintf('Session %d/%d %s\n', ises, Nsessions, nwbsessions{ises} )
+    pathpp = [datadir 'postprocessed' filesep nwbsessions{ises} filesep];
+    load([pathpp 'qc_units.mat'])
+
+    unit_amplitude_agg = cat(1, unit_amplitude_agg, unit_amplitude);
+    unit_amplitude_cutoff_agg = cat(1, unit_amplitude_cutoff_agg, unit_amplitude_cutoff);
+    unit_isi_violations_agg = cat(1, unit_isi_violations_agg, unit_isi_violations);
+    unit_presence_ratio_agg = cat(1, unit_presence_ratio_agg, unit_presence_ratio);
+    unit_wfdur_agg = cat(1, unit_wfdur_agg, unit_wfdur);
+end
+
+%% Siegle et al's single unit filter criteria: isi_violations < 0.5 & amplitude_cutoff < 0.1 & presence_ratio > 0.9
+neuqc = unit_isi_violations_agg<0.5 & unit_amplitude_cutoff_agg<0.5 & unit_presence_ratio_agg>0.9;
+neurs = unit_wfdur_agg>0.4;
+neuqcrs = neurs & neuqc;
+neuctxqcrs = neuqcrs(neuctxagg==1);
 
 %% USE FLANK STANDARD DEVIATION AS THRESHOLD
 thrflankstd = 7;
-neuctx2incl = true( nnz(neuctxagg==1), 1);
-% neuctx2incl = ICsigallagg.ICwcfg1_presentations.PkwBK(neuctxagg==1)<0.05;
+neuctx2incl = neuctxqcrs & ICsigallagg.ICwcfg1_presentations.PkwBK(neuctxagg==1)<0.05;
 
-Nctrctx = nnz(neuctxagg);
+Nctxqcrs = nnz(neuctxqcrs);
 areas = {'all', 'V1', 'HVA', 'LM', 'sigkwBK', 'V1sigkwBK', 'HVAsigkwBK', 'LMsigkwBK'};
 xflankstdthr = 0:0.5:20;
 Pout_flank = struct();
 Pin_flank = struct();
-Poutadj_flank = struct();
-Pinadj_flank = struct();
 for a = 1:numel(areas)
-    Pout_flank.(areas{a}) = NaN(Nctrctx,length(xflankstdthr));
-    Pin_flank.(areas{a}) = NaN(Nctrctx,length(xflankstdthr));
-    Poutadj_flank.(areas{a}) = NaN(Nctrctx,length(xflankstdthr));
-    Pinadj_flank.(areas{a}) = NaN(Nctrctx,length(xflankstdthr));
+    Pout_flank.(areas{a}) = NaN(Nctxqcrs,length(xflankstdthr));
+    Pin_flank.(areas{a}) = NaN(Nctxqcrs,length(xflankstdthr));
 end
 for ises = ses2anal
-    neuses = sesctxagg==ises;
-    noteye = ~eye(nnz(neuses));
+    neuses = sesctxagg(neuctxqcrs)==ises;
+    noteye = ~eye(size(ctxCCGjcpostpkagg{ises}));
     for a = 1:numel(areas)
         switch areas{a}
             case 'all'
-                sesneuinarea = true( nnz(sesctxagg==ises), 1);
+                sesneuinarea = neuctxqcrs(sesctxagg==ises);
             case 'V1'
-                sesneuinarea = visarealabelagg(sesctxagg==ises)==1;
+                sesneuinarea = visarealabelagg(sesctxagg==ises)==1 & neuctxqcrs(sesctxagg==ises);
             case 'HVA'
-                sesneuinarea = visarealabelagg(sesctxagg==ises)>1;
+                sesneuinarea = visarealabelagg(sesctxagg==ises)>1 & neuctxqcrs(sesctxagg==ises);
             case 'LM'
-                sesneuinarea = visarealabelagg(sesctxagg==ises)==2;
+                sesneuinarea = visarealabelagg(sesctxagg==ises)==2 & neuctxqcrs(sesctxagg==ises);
             case 'sigkwBK'
                 sesneuinarea = neuctx2incl(sesctxagg==ises);
             case 'V1sigkwBK'
@@ -323,12 +340,10 @@ for ises = ses2anal
         end
         for ix = 1:length(xflankstdthr)
             tempCCG = ctxCCGjcpostpkagg{ises} > xflankstdthr(ix)*ctxCCGflankstdagg{ises};
-            Pout_flank.(areas{a})(neuses,ix) = sum(tempCCG(:,sesneuinarea),2)./sum(noteye(:,sesneuinarea),2) ;
-            Poutadj_flank.(areas{a})(neuses,ix) = (sum(tempCCG(:,sesneuinarea),2)+1)./(sum(noteye(:,sesneuinarea),2)+1) ;
+            Pout_flank.(areas{a})(neuses,ix) = sum(tempCCG(neuctxqcrs(sesctxagg==ises), sesneuinarea),2)./sum(noteye(neuctxqcrs(sesctxagg==ises), sesneuinarea),2) ;
             
             tempCCG = ctxCCGjcprepkagg{ises} > xflankstdthr(ix)*ctxCCGflankstdagg{ises};
-            Pin_flank.(areas{a})(neuses,ix) = sum(tempCCG(:,sesneuinarea),2)./sum(noteye(:,sesneuinarea),2) ;
-            Pinadj_flank.(areas{a})(neuses,ix) = (sum(tempCCG(:,sesneuinarea),2)+1)./(sum(noteye(:,sesneuinarea),2)+1) ;
+            Pin_flank.(areas{a})(neuses,ix) = sum(tempCCG(neuctxqcrs(sesctxagg==ises), sesneuinarea),2)./sum(noteye(neuctxqcrs(sesctxagg==ises), sesneuinarea),2) ;
         end
     end
 end
@@ -336,22 +351,22 @@ end
 %% firing rate confound...
 figure
 subplot(2,2,1)
-plot(meanFRallagg(neuctxagg==1), Pin_flank.HVA(:,xflankstdthr==thrflankstd), '.')
+plot(meanFRallagg(neuqcrs & neuctxagg==1), Pin_flank.HVA(:,xflankstdthr==thrflankstd), '.')
 xlabel('Firing Rate')
 ylabel('Input from HVA')
 
 subplot(2,2,2)
-plot(meanFRallagg(neuctxagg==1), Pin_flank.V1(:,xflankstdthr==thrflankstd), '.')
+plot(meanFRallagg(neuqcrs & neuctxagg==1), Pin_flank.V1(:,xflankstdthr==thrflankstd), '.')
 xlabel('Firing Rate')
 ylabel('Input from V1')
 
 subplot(2,2,3)
-histogram2(meanFRallagg(neuctxagg==1), Pin_flank.HVA(:,xflankstdthr==thrflankstd), 'DisplayStyle', 'tile')
+histogram2(meanFRallagg(neuqcrs & neuctxagg==1), Pin_flank.HVA(:,xflankstdthr==thrflankstd), 'DisplayStyle', 'tile')
 xlabel('Firing Rate')
 ylabel('Input from HVA')
 
 subplot(2,2,4)
-histogram2(meanFRallagg(neuctxagg==1), Pin_flank.V1(:,xflankstdthr==thrflankstd), 'DisplayStyle', 'tile')
+histogram2(meanFRallagg(neuqcrs & neuctxagg==1), Pin_flank.V1(:,xflankstdthr==thrflankstd), 'DisplayStyle', 'tile')
 xlabel('Firing Rate')
 ylabel('Input from V1')
 
@@ -363,8 +378,8 @@ indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presen
 % ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
 % indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
 
-neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
-neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
+neuoi = ICenc(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
+neuctrl = indin(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
 % neuctrl = neuctx2incl & visarealabelagg==1;
 
 % positive relationship
@@ -385,7 +400,7 @@ xlabel('V1 inputs')
 ylabel('HVA inputs')
 
 %%
-fs = 12;
+fs = 18;
 
 ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder==1;
 indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin2==1 ...
@@ -393,8 +408,8 @@ indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presen
 % ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
 % indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
 
-neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
-neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
+neuoi = ICenc(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
+neuctrl = indin(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
 % neuctrl = neuctx2incl & visarealabelagg==1;
 
 V1neugroups = {'ICenc', 'indin'};
@@ -408,16 +423,12 @@ Pout_flank_avg = struct();
 Pin_flank_avg = struct();
 Pout_flank_sem = struct();
 Pin_flank_sem = struct();
-Pout_flank_ltavg = struct();
-Pin_flank_ltavg = struct();
-Pout_flank_ltsem = struct();
-Pin_flank_ltsem = struct();
 for n = 1:2
     switch V1neugroups{n}
         case 'ICenc'
-            tempneu = ICenc(neuctxagg==1) & visarealabelagg==1;
+            tempneu = neuctxqcrs & ICenc(neuctxagg==1) & visarealabelagg==1;
         case 'indin'
-            tempneu = indin(neuctxagg==1) & visarealabelagg==1;
+            tempneu = neuctxqcrs & indin(neuctxagg==1) & visarealabelagg==1;
     end
 for a = 1:numel(areas)
     Pout_flank_med.(areas{a}).(V1neugroups{n}) = median(Pout_flank.(areas{a})(tempneu,:),1);
@@ -430,11 +441,6 @@ for a = 1:numel(areas)
     Pin_flank_avg.(areas{a}).(V1neugroups{n}) = mean(Pin_flank.(areas{a})(tempneu,:),1);
     Pout_flank_sem.(areas{a}).(V1neugroups{n}) = std(Pout_flank.(areas{a})(tempneu,:),0,1)/sqrt(nnz(tempneu));
     Pin_flank_sem.(areas{a}).(V1neugroups{n}) = std(Pin_flank.(areas{a})(tempneu,:),0,1)/sqrt(nnz(tempneu));
-
-    Pout_flank_ltavg.(areas{a}).(V1neugroups{n}) = mean(log10(Poutadj_flank.(areas{a})(tempneu,:)),1);
-    Pin_flank_ltavg.(areas{a}).(V1neugroups{n}) = mean(log10(Pinadj_flank.(areas{a})(tempneu,:)),1);
-    Pout_flank_ltsem.(areas{a}).(V1neugroups{n}) = std(log10(Poutadj_flank.(areas{a})(tempneu,:)),0,1)/sqrt(nnz(tempneu));
-    Pin_flank_ltsem.(areas{a}).(V1neugroups{n}) = std(log10(Pinadj_flank.(areas{a})(tempneu,:)),0,1)/sqrt(nnz(tempneu));
 end
 end
 
@@ -445,72 +451,27 @@ indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presen
 % ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
 % indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
 
-neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
-neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
+neuoi = ICenc(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
+neuctrl = indin(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
 % neuctrl = neuctx2incl & visarealabelagg==1;
 V1neugroups = {'ICenc', 'indin'};
 
-xtl = {'IC-enc.', 'Seg. Resp.'};
-
-yl = [-3 0];
-ytl = [0.001 0.01 0.1 1];
 tempCData = [0 0.7 0; 0.42 0 0.42];
 figure('Position', [100 100 300 240]);
 hold all
 for n = 1:2
-errorbar(xflankstdthr, Pin_flank_ltavg.HVA.(V1neugroups{n}), Pin_flank_ltsem.HVA.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
-text(4, yl(2)-(n-1)*0.1*range(yl), xtl{n}, 'Color', tempCData(n,:), 'VerticalAlignment', 'top', 'FontSize', fs)
+errorbar(xflankstdthr, Pin_flank_avg.HVA.(V1neugroups{n}), Pin_flank_sem.HVA.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
 end
-% yl = ylim;
-plot(thrflankstd*[1 1], yl, 'k--')
-ylim(yl)
 xlim([0 8])
-% legend({'IC-enc.', 'Seg.'})
-% legend('boxoff')
-set(gca, 'YTick', log10(ytl), 'YTickLabel', ytl, 'FontSize', fs)
+legend({'IC-enc.', 'Seg.'})
+legend('boxoff')
+set(gca, 'FontSize', fs)
 xlabel('Factor of Flank Std', 'FontSize', fs)
 ylabel('Input from HVA', 'FontSize', fs)
-
-
-tempP = log10(Pinadj_flank.HVA(:,xflankstdthr==thrflankstd));
-ylab = 'Input from HVA';
-
-tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
-tempgroup = [ones(nnz(neuoi),1); 2*ones(nnz(neuctrl),1)];
-
-[X,Y,T,AUC] =perfcurve(tempgroup, tempPcat, 1, 'NBoot', 1000);
-disp(AUC)
-
-xtl = {'IC-enc.', 'Seg.'};
-
-tempCData = [0 0.7 0; 0.42 0 0.42];
-figure('Position', [200*ifg-100 100 180 240])
-hold all
-for ii = 1:2
-b = boxchart(tempgroup(tempgroup==ii), tempPcat(tempgroup==ii), 'notch' , 'on', 'linewidth', 2);%, 'BoxFaceColor', tempCData(ii,:)); %, 'FontName', 'Arial')
-b.BoxFaceColor = tempCData(ii,:);
-b.MarkerColor = 0.15+tempCData(ii,:);
-end
-yl = ylim;
-p=ranksum(tempP(neuoi,:), tempP(neuctrl,:));
-if p<0.05
-    scatter(1.5, yl(2), 50, 'k*', 'LineWidth', 1)
-end
-set(gca, 'FontSize', fs, 'XTickLabelRotation', 0, 'XTick', 1:2, ...
-    'XTickLabel', xtl, 'YTick', log10(ytl), 'YTickLabel', ytl)
-xlim([0.5 2.5])
-ylim(yl)
-xlabel('V1 Neurons', 'FontSize', fs)
-ylabel(ylab, 'FontSize', fs)
-
-
 
 tempP = Pin_flank.HVA;
 tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
 tempgroup = [ones(nnz(neuoi),1); 0.5+ones(nnz(neuctrl),1)];
-
-[X,Y,T,AUC] =perfcurve([ones(nnz(neuoi),1); 2*ones(nnz(neuctrl),1)], tempPcat(:,xflankstdthr==thrflankstd), 1, 'NBoot', 1000);
-disp(AUC)
 
 figure; 
 a = boxchart(tempP(neuoi,:));
@@ -552,6 +513,22 @@ tempCData = [0 0.7 0; 0.42 0 0.42];
 figure('Position', [100 100 270 240]);
 hold all
 for n = 1:2
+errorbar(xflankstdthr, Pin_flank_avg.V1.(V1neugroups{n}), Pin_flank_sem.V1.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
+text(4, yl(2)-(n-1)*0.1*range(yl), xtl{n}, 'Color', tempCData(n,:), 'VerticalAlignment', 'top', 'FontSize', fs)
+end
+plot(thrflankstd*[1 1], yl, 'k--')
+ylim(yl)
+xlim([0 8])
+% legend({'IC-enc.', 'Seg.'})
+% legend('boxoff')
+set(gca, 'FontSize', fs)
+xlabel('Threshold', 'FontSize', fs)
+ylabel('Input from V1', 'FontSize', fs)
+
+tempCData = [0 0.7 0; 0.42 0 0.42];
+figure('Position', [100 100 270 240]);
+hold all
+for n = 1:2
 errorbar(xflankstdthr, Pout_flank_avg.V1.(V1neugroups{n}), Pout_flank_sem.V1.(V1neugroups{n}), 'LineWidth', 2, 'Color', tempCData(n,:))
 text(4, yl(2)-(n-1)*0.1*range(yl), xtl{n}, 'Color', tempCData(n,:), 'VerticalAlignment', 'top', 'FontSize', fs)
 end
@@ -588,8 +565,8 @@ indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presen
 % ICenc = ICsigallagg.ICwcfg1_presentations.ICencoder1==1;
 % indin = ICsigallagg.ICwcfg1_presentations.indin1==1 | ICsigallagg.ICwcfg1_presentations.indin3==1;
 
-neuoi = ICenc(neuctxagg==1) & visarealabelagg==1;
-neuctrl = indin(neuctxagg==1) & visarealabelagg==1;
+neuoi = ICenc(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
+neuctrl = indin(neuqcrs & neuctxagg==1) & visarealabelagg(neuctxqcrs)==1;
 
 for ifg = 1:6%[1 3]
 switch ifg
@@ -612,9 +589,12 @@ ylab = 'Input in V1';
 tempP = Pout_flank.V1(:,xflankstdthr==thrflankstd);
 ylab = 'Output in V1';
 end
-yl = [0 0.04];
+yl = [0 0.02];
 tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
 tempgroup = [ones(nnz(neuoi),1); 2*ones(nnz(neuctrl),1)];
+
+[X,Y,T,AUC] =perfcurve(tempgroup, tempPcat, 1, 'NBoot', 1000);
+disp(AUC)
 
 xtl = {'IC-enc.', 'Seg.'};
 
@@ -637,10 +617,22 @@ xlim([0.5 2.5])
 ylim(yl)
 xlabel('V1 Neurons', 'FontSize', fs)
 ylabel(ylab, 'FontSize', fs)
-% title(sprintf('p=%.4f', p), 'FontSize', fs, 'Fontweight', 'normal')
+title(sprintf('p=%.4f', p), 'FontSize', fs, 'Fontweight', 'normal')
 % annotation('textbox', [0 0.92 1 0.1], 'string', figtit, 'fontsize', fs, 'edgecolor', 'none', 'horizontalalignment', 'center')
 end
 
+figure
+hold all
+h = histogram(tempP(neuctrl,:));
+histogram(tempP(neuoi,:), 'BinEdges', h.BinEdges);
+
 %%
 figure; boxplot(degconverge, visarealabelagg)
+
+
+tempP = Pout_flank.V1(:,xflankstdthr==thrflankstd);
+ylab = 'Output in V1';
+tempPcat = cat(1, tempP(neuoi,:), tempP(neuctrl,:));
+tempgroup = [ones(nnz(neuoi),1); 2*ones(nnz(neuctrl),1)];
+[X,Y,T,AUC] =perfcurve(tempgroup, tempPcat, 1, 'NBoot', 1000);
 

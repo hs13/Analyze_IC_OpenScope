@@ -3,7 +3,8 @@
 
 %%
 % datadir = 'D:\OpenScopeData\000248\';
-datadir = '/Users/hyeyoung/Documents/OpenScopeData/000248/';
+% datadir = '/Users/hyeyoung/Documents/OpenScopeData/000248/';
+datadir = 'S:/OpenScopeData/000248/';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name}; 
 nwbsessions = nwbsessions(~contains(nwbsessions, 'Placeholder') & ...

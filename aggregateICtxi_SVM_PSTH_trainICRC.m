@@ -13,7 +13,7 @@ whichICblock = 'ICwcfg1';
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
 visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 
-Twin = 50;
+Twin = 100;
 ises=1; pathsvm = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep nwbsessions{ises} filesep];
 load([pathsvm, 'SVMpsth' num2str(Twin) 'ms_', svmdesc, '_Cctx_', whichSVMkernel, '_', preproc, '_', whichICblock, '.mat'])
 psthtli = SVMpsth.psthtli;
@@ -125,22 +125,32 @@ for ises = 1:Nsessions
     end
 end
 
+figure; hold all
+plot(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'LM')), 'o')
+xl = xlim; 
+plot(xl,xl,'-')
+
+figure; hold all
+plot(testpeakperf(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'V1')), 'o')
+plot(testpeakperf(:,strcmp(visareas, 'LM')), testpeaktiming(:,strcmp(visareas, 'LM')), 'x')
+
+
 tempmat = testpeaktiming(:,probesoind);
 [p,t,s]=friedman(tempmat(all(~isnan(tempmat),2),:));
 figure; multcompare(s); title(sprintf('Friedman p=%.4f', p))
-signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'LM')))
+signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'LM'))) % 50ms bins: 0.1455; 100ms bins: 0.0586
 signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'AL')))
 
 tempmat = ICasREtpeaktiming(:,probesoind);
 [p,t,s]=friedman(tempmat(all(~isnan(tempmat),2),:));
 figure; multcompare(s); title(sprintf('Friedman p=%.4f', p))
-signrank(ICasREtpeaktiming(:,strcmp(visareas, 'V1')), ICasREtpeaktiming(:,strcmp(visareas, 'LM')))
+signrank(ICasREtpeaktiming(:,strcmp(visareas, 'V1')), ICasREtpeaktiming(:,strcmp(visareas, 'LM'))) % 50ms bins: 0.9824; 100ms bins: 0.5332
 signrank(ICasREtpeaktiming(:,strcmp(visareas, 'V1')), ICasREtpeaktiming(:,strcmp(visareas, 'AL')))
 
 tempmat = infpeaktiming(:,probesoind);
 [p,t,s]=friedman(tempmat(all(~isnan(tempmat),2),:));
 figure; multcompare(s); title(sprintf('Friedman p=%.4f', p))
-signrank(infpeaktiming(:,strcmp(visareas, 'V1')), infpeaktiming(:,strcmp(visareas, 'LM')))
+signrank(infpeaktiming(:,strcmp(visareas, 'V1')), infpeaktiming(:,strcmp(visareas, 'LM'))) % 50ms bins: 0.8477; 100ms bins: 0.2354
 signrank(infpeaktiming(:,strcmp(visareas, 'V1')), infpeaktiming(:,strcmp(visareas, 'AL')))
 
 %%

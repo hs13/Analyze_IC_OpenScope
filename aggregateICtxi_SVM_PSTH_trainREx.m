@@ -13,7 +13,7 @@ whichICblock = 'ICwcfg1';
 probes = {'A', 'B', 'C', 'D', 'E', 'F'};
 visareas = {'AM', 'PM', 'V1', 'LM', 'AL', 'RL'};
 
-Twin = 50;
+Twin = 100;
 ises=1; pathsvm = [datadir 'postprocessed' filesep 'SVM' filesep 'SVM_' svmdesc filesep nwbsessions{ises} filesep];
 load([pathsvm, 'SVMpsth' num2str(Twin) 'ms_', svmdesc, '_Cctx_', whichSVMkernel, '_', preproc, '_', whichICblock, '.mat'])
 psthtli = SVMpsth.psthtli;
@@ -114,14 +114,14 @@ end
 tempmat = testpeaktiming(:,probesoind);
 [p,t,s]=friedman(tempmat(all(~isnan(tempmat),2),:));
 figure; multcompare(s); title(sprintf('Friedman p=%.4f', p))
-signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'LM')))
-signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'AL')))
+signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'LM'))) % significantly earlier for V1. 50ms bins: , 100ms bins: 0.0254
+signrank(testpeaktiming(:,strcmp(visareas, 'V1')), testpeaktiming(:,strcmp(visareas, 'AL'))) % 50ms bins: , 100ms bins: 0.0459
 
 tempmat = ICasRExpeaktiming(:,probesoind);
 [p,t,s]=friedman(tempmat(all(~isnan(tempmat),2),:));
 figure; multcompare(s); title(sprintf('Friedman p=%.4f', p))
-signrank(ICasRExpeaktiming(:,strcmp(visareas, 'V1')), ICasRExpeaktiming(:,strcmp(visareas, 'LM')))
-signrank(ICasRExpeaktiming(:,strcmp(visareas, 'V1')), ICasRExpeaktiming(:,strcmp(visareas, 'AL')))
+signrank(ICasRExpeaktiming(:,strcmp(visareas, 'V1')), ICasRExpeaktiming(:,strcmp(visareas, 'LM'))) % not significantly different for V1 and LM. 50ms bins: , 100ms bins: 0.9688
+signrank(ICasRExpeaktiming(:,strcmp(visareas, 'V1')), ICasRExpeaktiming(:,strcmp(visareas, 'AL'))) % 50ms bins: , 100ms bins: 0.3374
 
 %%
 addpath(genpath('C:\Users\USER\GitHub\helperfunctions'))

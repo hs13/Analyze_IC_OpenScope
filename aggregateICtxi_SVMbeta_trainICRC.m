@@ -9,6 +9,9 @@ svmdesc = 'trainICRCtestRE';
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 whichSVMkernel = 'Linear';
 
+traintrialtypes = [106 107 110 111];
+predlabel = {'IC1', 'RC1', 'RC2', 'IC2'};
+
 whichICblock = 'ICwcfg1';
 whichprobe = 'C';
 whichvisarea = [whichprobe 'ctx'];
@@ -65,8 +68,6 @@ comboonevsone = nchoosek(traintrialtypes, 2);
 
 meanonevsone = cell(1,Nsessions);
 meanonevsall = cell(1,Nsessions);
-bestonevsone = cell(1,Nsessions); % best test accuracy
-bestonevsall = cell(1,Nsessions);
 
 for ises = 1:Nsessions
     temponevsone = strcmp(SVMcodingname_Cctxagg(:,ises), 'onevsone');
@@ -94,20 +95,133 @@ indin1agg = cat(1, ICwcfg1agg.indin1);
 indin2agg = cat(1, ICwcfg1agg.indin2);
 indin3agg = cat(1, ICwcfg1agg.indin3);
 indin4agg = cat(1, ICwcfg1agg.indin4);
+RC1encagg = cat(1, ICwcfg1agg.RCencoder1);
+RC2encagg = cat(1, ICwcfg1agg.RCencoder2);
+
+ICencagg = cat(1, ICwcfg1agg.ICencoder);
+indinagg = indin1agg | indin2agg | indin3agg | indin4agg;
 
 meanonevsoneagg = cat(1,meanonevsone{:});
 meanonevsallagg = cat(1,meanonevsall{:});
 
-figure
-for ii = 1:6
-    subplot(2,3,ii)
-    hold all
-    histogram(meanonevsoneagg(:,ii))
-    histogram(meanonevsoneagg(IC1encagg(neuctxinprobeagg==1),ii))
-    histogram(meanonevsoneagg(IC2encagg(neuctxinprobeagg==1),ii))
-    title(ii)
+absmeanonevsallagg = abs(meanonevsallagg);
+absmeanonevsoneagg = abs(meanonevsoneagg);
+
+%%
+absopt = false;
+if absopt 
+veconevsall = absmeanonevsallagg;
+veconevsone = absmeanonevsoneagg;
+else
+veconevsall = meanonevsallagg;
+veconevsone = meanonevsoneagg;
 end
 
+ICenc_betaonevsall = cat(1, veconevsall(IC1encagg(neuctxinprobeagg==1),1), veconevsall(IC2encagg(neuctxinprobeagg==1),4) );
+segresp_betaonevsall = cat(1, veconevsall(indin1agg(neuctxinprobeagg==1) | indin3agg(neuctxinprobeagg==1),1), ...
+    veconevsall(indin2agg(neuctxinprobeagg==1) | indin4agg(neuctxinprobeagg==1),4) );
+p = ranksum(ICenc_betaonevsall, segresp_betaonevsall);
+figure
+hold all
+hc = histogram(ICenc_betaonevsall, 'Normalization', 'probability');%, 'BinEdges', hc.BinEdges)
+histogram(segresp_betaonevsall, hc.BinEdges, 'Normalization', 'probability')
+title(sprintf('IC-encoders vs seg. resp. p=%.4f', p))
+if absopt
+    xlabel('SVM abs beta one vs all trials')
+else
+    xlabel('SVM beta one vs all trials')
+end
+ylabel('probability')
+
+
+ICenc_betaonevsone = cat(1, mean( veconevsone(IC1encagg(neuctxinprobeagg==1),1:2), 2), ...
+    -1*mean( veconevsone(IC2encagg(neuctxinprobeagg==1),5:6), 2) );
+segresp_betaonevsone = cat(1, mean( veconevsone(indin1agg(neuctxinprobeagg==1) | indin3agg(neuctxinprobeagg==1),1:2), 2), ...
+    -1*mean( veconevsone(indin2agg(neuctxinprobeagg==1) | indin4agg(neuctxinprobeagg==1),5:6), 2) );
+p = ranksum(ICenc_betaonevsone, segresp_betaonevsone);
+figure
+hold all
+hc = histogram(ICenc_betaonevsone, 'Normalization', 'probability');%, 'BinEdges', hc.BinEdges)
+histogram(segresp_betaonevsone, hc.BinEdges, 'Normalization', 'probability')
+title(sprintf('IC-encoders vs seg. resp. p=%.4f', p))
+if absopt
+    xlabel('SVM abs beta one vs one trials')
+else
+    xlabel('SVM beta one vs one trials')
+end
+ylabel('probability')
+
+%%
+histnorm = 'Count';
+
+figure('Position', [100 100 800 600])
+for ii = 1:4
+    switch predlabel{ii}
+        case 'IC1'
+            neuic = IC1encagg(neuctxinprobeagg==1);
+            neusr = indin1agg(neuctxinprobeagg==1) | indin3agg(neuctxinprobeagg==1);
+        case 'LC1'
+            neuic = RC1encagg(neuctxinprobeagg==1);
+            neusr = indin1agg(neuctxinprobeagg==1) | indin4agg(neuctxinprobeagg==1);
+        case 'LC2'
+            neuic = RC2encagg(neuctxinprobeagg==1);
+            neusr = indin2agg(neuctxinprobeagg==1) | indin3agg(neuctxinprobeagg==1);
+        case 'IC2'
+            neuic = IC2encagg(neuctxinprobeagg==1);
+            neusr = indin2agg(neuctxinprobeagg==1) | indin4agg(neuctxinprobeagg==1);
+    end
+    subplot(2,2,ii)
+    hold all
+    hc = histogram(veconevsall(:,ii), 'Normalization', histnorm);
+    hc = histogram(veconevsall(neuic,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
+    histogram(veconevsall(neusr,ii), hc.BinEdges, 'Normalization', histnorm)
+    p = ranksum(veconevsall(neuic,ii), veconevsall(neusr,ii));
+    pic = ranksum(veconevsall(neuic,ii), veconevsall(:,ii));
+    psr = ranksum(veconevsall(neusr,ii), veconevsall(:,ii));
+    if contains(predlabel{ii}, 'IC')
+    title(sprintf('IC-encoders vs seg. resp. p=%.4f\nIC-enc vs all p=%.4f\nseg resp vs all p=%.4f', p, pic, psr))
+    else
+    title(sprintf('LC-encoders vs seg. resp. p=%.4f\nLC-enc vs all p=%.4f\nseg resp vs all p=%.4f', p, pic, psr))
+    end
+    if absopt
+    xlabel(sprintf('SVM abs beta %s vs all trials', predlabel{ii}))
+    else
+    xlabel(sprintf('SVM beta %s vs all trials', predlabel{ii}))
+    end
+    ylabel(histnorm)
+end
+
+C= nchoosek(predlabel,2);
+figure('Position', [1300 100 1200 600])
+for ii = 1:6
+    if strcmp(C{ii,1}, 'IC1') && contains(C{ii,2}, 'RC')
+        neuic = IC1encagg(neuctxinprobeagg==1);
+        neusr = indin1agg(neuctxinprobeagg==1) | indin3agg(neuctxinprobeagg==1);
+    elseif strcmp(C{ii,2}, 'IC2') && contains(C{ii,1}, 'RC')
+        neuic = IC2encagg(neuctxinprobeagg==1);
+        neusr = indin2agg(neuctxinprobeagg==1) | indin4agg(neuctxinprobeagg==1);
+    else % IC1 vs IC2, RC1 vs RC2
+        neuic = ICencagg(neuctxinprobeagg==1);
+        neusr = indinagg(neuctxinprobeagg==1);
+    end
+    subplot(2,3,ii)
+    hold all
+    hc = histogram(veconevsone(:,ii), 'Normalization', histnorm);
+    hc = histogram(veconevsone(neuic,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
+    histogram(veconevsone(neusr,ii), hc.BinEdges, 'Normalization', histnorm)
+    p = ranksum(veconevsone(neuic,ii), veconevsone(neusr,ii));
+    pic = ranksum(veconevsone(neuic,ii), veconevsone(:,ii));
+    psr = ranksum(veconevsone(neusr,ii), veconevsone(:,ii));
+    title(sprintf('IC-encoders vs seg. resp. p=%.4f\nIC-enc vs all p=%.4f\nseg resp vs all p=%.4f', p, pic, psr))
+    if absopt
+    xlabel(sprintf('SVM abs beta %s vs %s trials', C{ii,1}, C{ii,2}))
+    else
+    xlabel(sprintf('SVM beta %s vs %s trials', C{ii,1}, C{ii,2}))
+    end
+    ylabel(histnorm)
+end
+
+%%
 for ii = 1:6
     p1 = ranksum(meanonevsoneagg(IC1encagg(neuctxinprobeagg==1),ii), meanonevsoneagg(:,ii));
     p2 = ranksum(meanonevsoneagg(IC2encagg(neuctxinprobeagg==1),ii), meanonevsoneagg(:,ii));
@@ -147,7 +261,7 @@ for ises = 1:Nsessions
     disp(sum(meanonevsone{ises},1))
 end
 
-% sum of decoder weights
+%% sum of decoder weights
 neugroups = {'ICencoder1', 'ICencoder2', 'indin1', 'indin2', 'indin3', 'indin4', 'all'};
 onevsonesumbeta = struct();
 onevsallsumbeta = struct();

@@ -107,7 +107,7 @@ meanonevsallagg = cat(1,meanonevsall{:});
 absmeanonevsallagg = abs(meanonevsallagg);
 absmeanonevsoneagg = abs(meanonevsoneagg);
 
-%%
+%% one vs all and one vs one decoder weights
 absopt = false;
 if absopt 
 veconevsall = absmeanonevsallagg;
@@ -151,8 +151,9 @@ else
 end
 ylabel('probability')
 
-%%
+%% 
 histnorm = 'Count';
+plothistallneurons = false;
 
 figure('Position', [100 100 800 600])
 for ii = 1:4
@@ -172,9 +173,13 @@ for ii = 1:4
     end
     subplot(2,2,ii)
     hold all
+    if plothistallneurons
     hc = histogram(veconevsall(:,ii), 'Normalization', histnorm);
-    hc = histogram(veconevsall(neuic,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
-    histogram(veconevsall(neusr,ii), hc.BinEdges, 'Normalization', histnorm)
+    hc = histogram(veconevsall(neusr,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
+    else
+    hc = histogram(veconevsall(neusr,ii), 'Normalization', histnorm);
+    end
+    histogram(veconevsall(neuic,ii), hc.BinEdges, 'Normalization', histnorm)
     p = ranksum(veconevsall(neuic,ii), veconevsall(neusr,ii));
     pic = ranksum(veconevsall(neuic,ii), veconevsall(:,ii));
     psr = ranksum(veconevsall(neusr,ii), veconevsall(:,ii));
@@ -206,9 +211,13 @@ for ii = 1:6
     end
     subplot(2,3,ii)
     hold all
+    if plothistallneurons
     hc = histogram(veconevsone(:,ii), 'Normalization', histnorm);
-    hc = histogram(veconevsone(neuic,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
-    histogram(veconevsone(neusr,ii), hc.BinEdges, 'Normalization', histnorm)
+    hc = histogram(veconevsone(neusr,ii), 'Normalization', histnorm, 'BinEdges', hc.BinEdges);
+    else
+    hc = histogram(veconevsone(neusr,ii), 'Normalization', histnorm);
+    end
+    histogram(veconevsone(neuic,ii), hc.BinEdges, 'Normalization', histnorm)
     p = ranksum(veconevsone(neuic,ii), veconevsone(neusr,ii));
     pic = ranksum(veconevsone(neuic,ii), veconevsone(:,ii));
     psr = ranksum(veconevsone(neusr,ii), veconevsone(:,ii));

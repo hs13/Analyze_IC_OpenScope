@@ -4,16 +4,16 @@
 % nwbsessions = nwbsessions(contains(nwbsessions, 'sub-'));
 % Nsessions = numel(nwbsessions)-1;
 
-datadir = '/Users/hyeyoung/Documents/OpenScopeData/';
-nwbsessions = {'sub-1171903426','sub-1172969386','sub-1174569632','sub-1175512776', ...
-    'sub-1177693335','sub-1181585601','sub-1182593224','sub-1183369796','sub-1186544719'};
-Nsessions = numel(nwbsessions);
+% datadir = '/Users/hyeyoung/Documents/OpenScopeData/';
+% nwbsessions = {'sub-1171903426','sub-1172969386','sub-1174569632','sub-1175512776', ...
+%     'sub-1177693335','sub-1181585601','sub-1182593224','sub-1183369796','sub-1186544719'};
+% Nsessions = numel(nwbsessions);
 
 preproc = 'zscore'; % '' is z-score train trials, '_zscoreall', or '_meancenter'
 svmdesc = 'trainICRCtestRE';
 whichSVMkernel = 'Linear';
 
-justctx = false;
+justctx = true;
 if justctx
     visareas = {'VISp', 'VISl', 'VISrl', 'VISal', 'VISpm', 'VISam'};
     pathsv = [datadir 'SVM_' svmdesc filesep];
@@ -38,6 +38,8 @@ for a = 1:numel(visareas)
             if exist(svmfn, 'file')
                 load(svmfn, 'SVMtrainICRC')
                 SVMtrainICRCagg(ises).(whichICblock).(whichvisarea) = SVMtrainICRC;
+            else
+                warning([svmfn ' does not exist'])
             end
         end
     end

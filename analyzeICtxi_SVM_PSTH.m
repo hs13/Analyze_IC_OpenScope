@@ -1,3 +1,4 @@
+%% NOTE THIS VERSION IS ERRONEOUS BECAUSE PSTH WAS NOT PREPROCESSED (e.g., z-scored) the same way as SVM
 datadir = 'S:/OpenScopeData/000248/';
 nwbdir = dir(datadir);
 nwbsessions = {nwbdir.name};
